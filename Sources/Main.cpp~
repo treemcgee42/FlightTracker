@@ -1,0 +1,41 @@
+
+#include <string>
+
+namespace rl {
+#include "raylib.h"
+}
+
+using Latitude = double;
+using Longitude = double;
+
+struct GeoCoord {
+    double latitude;
+    double longitude;
+};
+
+struct FlightData {
+    std::string callSign;
+    GeoCoord position;
+};
+
+struct GeoBb {
+    GeoCoord min;
+    GeoCoord max;
+};
+
+int
+main() {
+    const int screenWidth = 800;
+    const int screenHeight = 450;
+
+    rl::InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+    while (!rl::WindowShouldClose()) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+        DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
+        EndDrawing();
+    }
+    rl::CloseWindow();
+
+    return 0;
+}

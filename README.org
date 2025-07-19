@@ -1,0 +1,17 @@
+
+
+
+This is an approximately 50km by 50km box around Logan:
+|---------------+------------|
+| Longitude min | -71.245840 |
+| Latitude min  |  42.183094 |
+| Longitude max | -70.777170 |
+| Latitude max  |  42.529427 |
+|---------------+------------|
+
+Get some sample data:
+#+begin_src bash
+  curl -s 'https://opensky-network.org/api/states/all?lamin=42.183094&lomin=-71.245840&lamax=42.529427&lomax=-70.777170' -o sample_data.json
+#+end_src
+
+https://opensky-network.org/api/states/all?lamin=42.183094&lomin=-71.245840&lamax=42.529427&lomax=-70.777170
