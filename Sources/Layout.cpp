@@ -1,24 +1,100 @@
+#include <assert.h>
+
+#include <fmt/format.h>
 namespace rl {
 #include <raylib.h>
 }
 
 #include "Layout.hpp"
 
-Text::Text( const std::string & content ):
-    _content( content ) {
-    _size = ComponentSize::fromRlVector2(
-        rl::MeasureTextEx( _font, _content.c_str(), _fontSize, 1 ) );
+VSpace::VSpace( double amount ): _amount( amount ) {}
+
+ComponentSize
+VSpace::size() const {
+    return ComponentSize( 1, _amount );
 }
 
 void
-Text::draw( Vector2 at ) {
-    rl::DrawTextEx( _font, _content.c_str(), at.toRlVector2(), _fontSize, 1,
-                    _textColor );
+VSpace::draw( Vector2 at, double deltaTime ) {
+    rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), rl::BLANK );
+}
+
+Text::Text( const std::string & content ):
+    _content( content ) {
+    _size = ComponentSize::fromRlVector2(
+        rl::MeasureTextEx( _font, _content.c_str(), _fontSize, _textSpacing ) );
+}
+
+Text::Text( const std::string & content, double fontSize ):
+    Text( content ) {
+    _fontSize = fontSize;
+}
+
+void
+Text::draw( Vector2 at, double deltaTime ) {
+    rl::DrawTextEx( _font, _content.c_str(), at.toRlVector2(), _fontSize,
+                    _textSpacing, _textColor );
 }
 
 ComponentSize
 Text::size() const {
     return _size;
+}
+
+void
+CircularScrollOffset::update( double deltaTime ) {
+    assert( _initialized );
+    if( _scrollRegionSize < _contentSize ) {
+        _offset = fmod( _offset + _scrollSpeed * deltaTime,
+                        _contentSize + _paddingSize );
+    }
+}
+
+ScrollingText::ScrollingText( const std::string & content, double width,
+                              double scrollSpeed )
+    : Text( content ), _width( width ), _scrollSpeed( scrollSpeed ) {
+    const char * padding = "    ";
+    _text = fmt::format( "{}{}", content, padding, content, padding );
+
+    const rl::Vector2 contentSize = rl::MeasureTextEx(
+        _font, content.c_str(), _fontSize, _textSpacing );
+    _textHeight = contentSize.y;
+    const rl::Vector2 textWithPaddingSize = rl::MeasureTextEx(
+        _font, _text.c_str(), _fontSize, _textSpacing );
+    const float paddingSize = textWithPaddingSize.x - contentSize.x;
+
+    _offsetHelper = CircularScrollOffset( contentSize.x, paddingSize, width,
+                                          _scrollSpeed );
+
+    _textTexture = rl::LoadRenderTexture(
+        static_cast< int >( 2 * contentSize.x + paddingSize ),
+        static_cast< int >( contentSize.y ) );
+    rl::BeginTextureMode( _textTexture );
+    rl::ClearBackground( rl::BLANK );
+    rl::DrawTextEx( _font, _text.c_str(), { 0, 0 }, _fontSize, 1, rl::BLACK );
+    rl::DrawTextEx( _font, _text.c_str(), { textWithPaddingSize.x, 0 }, _fontSize,
+                    1, rl::BLACK );
+    rl::EndTextureMode();
+}
+
+ScrollingText::~ScrollingText() {
+    rl::UnloadRenderTexture( _textTexture );
+}
+
+ComponentSize
+ScrollingText::size() const {
+    return ComponentSize( _width, _textHeight );
+}
+
+void
+ScrollingText::draw( Vector2 at, double deltaTime ) {
+    _offsetHelper.update( deltaTime );
+    DrawTextureRec( _textTexture.texture,
+                    { static_cast< float >( _offsetHelper.offset() ), 0,
+                      static_cast< float >( _width ),
+                      -1.f * static_cast< float >( _textHeight ) },
+                    at.toRlVector2(),
+                    rl::WHITE );
 }
 
 VStack::VStack():
@@ -42,10 +118,10 @@ VStack::size() const {
 }
 
 void
-VStack::draw( Vector2 at ) {
+VStack::draw( Vector2 at, double deltaTime ) {
     Vector2 componentPos = at;
     for( auto & component : _components ) {
-        component->draw( componentPos );
+        component->draw( componentPos, deltaTime );
         componentPos.yInc( component->size().y() + _spacing );
     }
 }
@@ -71,10 +147,10 @@ HStack::size() const {
 }
 
 void
-HStack::draw( Vector2 at ) {
+HStack::draw( Vector2 at, double deltaTime ) {
     Vector2 componentPos = at;
     for( auto & component : _components ) {
-        component->draw( componentPos );
+        component->draw( componentPos, deltaTime );
         componentPos.xInc( component->size().x() + _spacing );
     }
 }
@@ -104,7 +180,36 @@ testVStack() {
         rl::BeginDrawing();
         rl::ClearBackground( rl::RAYWHITE );
 
-        hstack.draw( { 20, 20 } );
+        const float deltaTime = rl::GetFrameTime();
+        hstack.draw( { 20, 20 }, deltaTime );
+
+        rl::EndDrawing();
+    }
+
+    rl::CloseWindow();
+    return 0;
+}
+
+int
+testScrollingText() {
+    rl::InitWindow(800, 200, "Scrolling Text Demo");
+
+    VStack vstack;
+    vstack.addComponent( std::make_unique< Text >( "Title", 20 ) );
+    vstack.addComponent( std::make_unique< VSpace >( 10 ) );
+    vstack.addComponent( std::make_unique< ScrollingText >(
+        "This is some scrolling text. The first line of scrolling text.",
+        100, 25 ) );
+    vstack.addComponent( std::make_unique< ScrollingText >(
+        "This is some more scrolling text (the second line of scrolling text).",
+        100, 50 ) );
+
+    while( !rl::WindowShouldClose() ) {
+        rl::BeginDrawing();
+        rl::ClearBackground( rl::RAYWHITE );
+
+        const float deltaTime = rl::GetFrameTime();
+        vstack.draw( { 20, 20 }, deltaTime );
 
         rl::EndDrawing();
     }

@@ -18,6 +18,8 @@ namespace rl {
 #include "raylib.h"
 }
 
+#include "Layout.hpp"
+
 using Latitude = double;
 using Longitude = double;
 
@@ -78,122 +80,6 @@ drawLabeledPoint( int pointX, int pointY, float pointRadius, const char * text, 
     }
 
     rl::DrawText( text, pointX + offsetX, pointY + offsetY, 12, color );
-}
-
-class CircularScrollOffset {
-public:
-    CircularScrollOffset():
-        _initialized( false ),
-        _contentSize( 0 ),
-        _paddingSize( 0 ),
-        _scrollRegionSize( 0 ),
-        _scrollSpeed( 0 ),
-        _offset( 0 ) {}
-
-    CircularScrollOffset( double contentSize,
-                          double paddingSize,
-                          double scrollRegionSize,
-                          double scrollSpeed ):
-        _initialized( true ),
-        _contentSize( contentSize ),
-        _paddingSize( paddingSize ),
-        _scrollRegionSize( scrollRegionSize ),
-        _scrollSpeed( scrollSpeed ),
-        _offset( 0 ) {}
-
-    void
-    update( double deltaTime ) {
-        assert( _initialized );
-        if( _scrollRegionSize < _contentSize ) {
-            _offset = fmod( _offset + _scrollSpeed * deltaTime,
-                            _contentSize + _paddingSize );
-        }
-    }
-
-    double
-    offset() {
-        assert( _initialized );
-        return _offset;
-    }
-
-private:
-    bool _initialized;
-    double _contentSize;
-    double _paddingSize;
-    double _scrollRegionSize;
-    double _scrollSpeed;
-    double _offset;
-};
-
-class ScrollingText {
-public:
-    ScrollingText( const std::string & text, double width ): _width( width ) {
-        const char * padding = "    ";
-        _text = fmt::format( "{}{}", text, padding, text, padding );
-
-        const rl::Font font = rl::GetFontDefault();
-        const float fontSize = 20.0;
-        const rl::Vector2 textSize = rl::MeasureTextEx(
-            font, text.c_str(), fontSize, 1 );
-        _textHeight = textSize.y;
-        const rl::Vector2 textWithPaddingSize = rl::MeasureTextEx(
-            font, _text.c_str(), fontSize, 1 );
-        const float paddingSize = textWithPaddingSize.x - textSize.x;
-        // const rl::Vector2 paddingSize = rl::MeasureTextEx(
-        //     font, padding, fontSize, 1 );
-
-        _offsetHelper = CircularScrollOffset( textSize.x, paddingSize, width, 50 );
-
-        _textTexture = rl::LoadRenderTexture(
-            static_cast< int >( 2 * textSize.x + paddingSize ),
-            static_cast< int >( textSize.y ) );
-        rl::BeginTextureMode( _textTexture );
-        rl::ClearBackground( rl::BLANK );
-        rl::DrawTextEx( font, _text.c_str(), { 0, 0 }, fontSize, 1, rl::BLACK );
-        rl::DrawTextEx( font, _text.c_str(), { textWithPaddingSize.x, 0 }, fontSize, 1, rl::BLACK );
-        rl::EndTextureMode();
-    }
-
-    ~ScrollingText() {
-        rl::UnloadRenderTexture( _textTexture );
-    }
-
-    void
-    render( rl::Vector2 at, double deltaTime ) {
-        _offsetHelper.update( deltaTime );
-        DrawTextureRec( _textTexture.texture,
-                        { static_cast< float >( _offsetHelper.offset() ), 0,
-                          static_cast< float >( _width ),
-                          -1.f * static_cast< float >( _textHeight ) },
-                        at,
-                        rl::WHITE );
-    }
-private:
-    double _width;
-    std::string _text;
-    rl::RenderTexture2D _textTexture;
-    CircularScrollOffset _offsetHelper;
-    double _textHeight;
-};
-
-int
-testScrollingText() {
-    rl::InitWindow(800, 200, "Scrolling Text Demo");
-
-    ScrollingText s1{ "Scrolling text demo 1", 50 };
-
-    while( !rl::WindowShouldClose() ) {
-        rl::BeginDrawing();
-        rl::ClearBackground( rl::RAYWHITE );
-
-        const float deltaTime = rl::GetFrameTime();
-        s1.render( { 20, 20 }, deltaTime );
-
-        rl::EndDrawing();
-    }
-
-    rl::CloseWindow();
-    return 0;
 }
 
 class Radar2d {
@@ -361,7 +247,11 @@ mainMain() {
     return 0;
 }
 
+extern int testVStack();
+extern int testScrollingText();
+
 int
 main() {
+    // return testVStack();
     return testScrollingText();
 }

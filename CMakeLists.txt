@@ -30,7 +30,8 @@ target_link_libraries(janet
 
 # --- Main project ------------------------------------------------------------------
 
-set(SOURCES Sources/Main.cpp)
+set(SOURCES Sources/Main.cpp
+            Sources/Layout.cpp)
 
 add_executable(flight_tracker ${SOURCES})
 target_link_libraries(flight_tracker
