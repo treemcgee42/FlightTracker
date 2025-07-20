@@ -7,6 +7,117 @@ namespace rl {
 
 #include "Layout.hpp"
 
+void
+Layout1d::baseSizePass() {
+    if( isAbsolute() ) {
+        sizeIs( _sizeSpec.getAbsolute() );
+    } else if( isGrow() ) {
+        sizeIs( 0 );
+    } else {
+        assert( false );
+    }
+
+    for( auto & child : _children ) {
+        child.baseSizePass();
+    }
+}
+
+// growing must happen top-down
+void
+Layout1d::growSizePass() {
+    if( _children.size() == 0 ) {
+        return;
+    }
+
+    int numGrowChildren = 0;
+    double availableSpace =
+        size() - ( 2 * _padding ) - ( ( _children.size() - 1 ) * _childGap );
+    for( const auto & child : _children ) {
+        if( child.isGrow() ) {
+            assert( child._size == 0 );
+            numGrowChildren += 1;
+        }
+        availableSpace -= child._size;
+    }
+
+    const double growSize =
+        std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
+    for( auto & child : _children ) {
+        if( child.isGrow() ) {
+            child.sizeIs( growSize );
+        }
+        child.growSizePass();
+    }
+}
+
+int
+testLayout1d() {
+    { // Single expanding child.
+        Layout1d root;
+        root.sizeSpecIs( SizeSpec::absolute( 80 ) );
+
+        Layout1d child0;
+        child0.parentIs( &root );
+        child0.sizeSpecIs( SizeSpec::grow() );
+        root.addChild( child0 );
+
+        root.computeLayout();
+        assert( root.child( 0 ).size() == root.size() );
+    }
+
+    { // Single expanding child with padding.
+        Layout1d root;
+        root.sizeSpecIs( SizeSpec::absolute( 80 ) );
+        root.paddingIs( 10 );
+
+        Layout1d child0;
+        child0.parentIs( &root );
+        child0.sizeSpecIs( SizeSpec::grow() );
+        root.addChild( child0 );
+
+        root.computeLayout();
+        assert( root.child( 0 ).size() == 60 );
+    }
+
+    { // One absolute, one expanding child.
+        Layout1d root;
+        root.sizeSpecIs( SizeSpec::absolute( 80 ) );
+
+        Layout1d child0;
+        child0.parentIs( &root );
+        child0.sizeSpecIs( SizeSpec::grow() );
+        root.addChild( child0 );
+
+        Layout1d child1;
+        child1.parentIs( &root );
+        child1.sizeSpecIs( SizeSpec::absolute( 10 ) );
+        root.addChild( child1 );
+
+        root.computeLayout();
+        assert( root.child( 0 ).size() == 70 );
+        assert( root.child( 1 ).size() == 10 );
+    }
+
+    { // Multiple expanding children.
+        Layout1d root;
+        root.sizeSpecIs( SizeSpec::absolute( 90 ) );
+
+        for( int i=0; i<3; ++i ) {
+            Layout1d child;
+            child.parentIs( &root );
+            child.sizeSpecIs( SizeSpec::grow() );
+            root.addChild( child );
+        }
+
+        root.computeLayout();
+        for( int i=0; i<3; ++i ) {
+            assert( root.child( i ).size() == 30 );
+        }
+    }
+
+    return 0;
+}
+
 VSpace::VSpace( double amount ): _amount( amount ) {}
 
 ComponentSize

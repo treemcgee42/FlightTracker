@@ -251,10 +251,14 @@ extern int testRadar();
 extern int testScrollingText();
 extern int testVStack();
 
+extern int testLayout1d();
+
 int
 main() {
     // return mainMain();
-    return testRadar();
+    // return testRadar();
     // return testScrollingText();
     // return testVStack();
+
+    testLayout1d();
 }
