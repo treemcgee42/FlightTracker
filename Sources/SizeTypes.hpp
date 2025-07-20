@@ -31,6 +31,15 @@ struct Vector2 {
         return Vector2( v.x, v.y );
     }
 
+    constexpr rl::Rectangle toRlRectangle( const Vector2 & widthAndHeight ) {
+        return {
+            static_cast< float >( _x ),
+            static_cast< float >( _y ),
+            static_cast< float >( widthAndHeight.width() ),
+            static_cast< float >( widthAndHeight.height() )
+        };
+    }
+
     constexpr Vector2 operator+( const Vector2 & other ) const {
         return Vector2( x() + other.x(), y() + other.y() );
     }

@@ -30,12 +30,16 @@ target_link_libraries(janet
 
 # --- Main project ------------------------------------------------------------------
 
-set(SOURCES Sources/Main.cpp
+find_package(nlohmann_json 3.12.0 REQUIRED)
+
+set(SOURCES Sources/FlightData.cpp
+            Sources/Main.cpp
             Sources/Layout.cpp)
 
 add_executable(flight_tracker ${SOURCES})
 target_link_libraries(flight_tracker
     fmt
     janet
+    nlohmann_json::nlohmann_json
     raylib
 )
