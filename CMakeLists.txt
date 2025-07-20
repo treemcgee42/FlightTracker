@@ -32,14 +32,20 @@ target_link_libraries(janet
 
 find_package(nlohmann_json 3.12.0 REQUIRED)
 
-set(SOURCES Sources/FlightData.cpp
-            Sources/Main.cpp
-            Sources/Layout.cpp)
+set(FTL_SOURCES Sources/FlightData.cpp
+                Sources/Layout.cpp)
+add_library(ftl ${FTL_SOURCES})
+target_link_libraries(ftl fmt
+                          janet
+                          nlohmann_json::nlohmann_json
+                          raylib)
 
-add_executable(flight_tracker ${SOURCES})
-target_link_libraries(flight_tracker
-    fmt
-    janet
-    nlohmann_json::nlohmann_json
-    raylib
-)
+find_package(doctest REQUIRED)
+set(FTL_TESTS Sources/LayoutTest.cpp)
+add_executable(ftl_test ${FTL_TESTS}
+                        Sources/Test.cpp)
+target_link_libraries(ftl_test doctest::doctest
+                               ftl)
+
+add_executable(flight_tracker Sources/Main.cpp)
+target_link_libraries(flight_tracker ftl)

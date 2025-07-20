@@ -43,6 +43,7 @@ public:
     void sizeIs( double val ) { _size = val; }
 
     void paddingIs( double val ) { _padding = val; }
+    void childGapIs( double val ) { _childGap = val; }
 
     Layout1d child( int idx ) const { return _children[ idx ]; }
     void parentIs( Layout1d * val ) { _parent = val; }
