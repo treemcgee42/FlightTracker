@@ -8,46 +8,63 @@ namespace rl {
 #include "Layout.hpp"
 
 void
-Layout1d::baseSizePass() {
-    if( isAbsolute() ) {
-        sizeIs( _sizeSpec.getAbsolute() );
-    } else if( isGrow() ) {
-        sizeIs( 0 );
+LayoutManager::baseSizePass( const LayoutHandle & handle ) {
+    Layout & layout = getLayoutMut( handle );
+    const SizeSpec sizeSpec = layout.sizeSpec();
+
+    if( sizeSpec.isAbsolute() ) {
+        layout.sizeIs( sizeSpec.getAbsolute() );
+    } else if( sizeSpec.isGrow() ) {
+        layout.sizeIs( 0 );
     } else {
         assert( false );
     }
 
-    for( auto & child : _children ) {
-        child.baseSizePass();
+    for( const LayoutHandle & child : layout.children() ) {
+        baseSizePass( child );
     }
 }
 
 // growing must happen top-down
 void
-Layout1d::growSizePass() {
-    if( _children.size() == 0 ) {
+LayoutManager::growSizePass( const LayoutHandle & handle ) {
+    Layout & layout = getLayoutMut( handle );
+    const SizeSpec sizeSpec = layout.sizeSpec();
+
+    if( layout.children().size() == 0 ) {
         return;
     }
 
     int numGrowChildren = 0;
     double availableSpace =
-        size() - ( 2 * _padding ) - ( ( _children.size() - 1 ) * _childGap );
-    for( const auto & child : _children ) {
-        if( child.isGrow() ) {
-            assert( child._size == 0 );
+        layout.size() - ( 2 * layout.padding() ) -
+        ( ( layout.children().size() - 1 ) * layout.childGap() );
+    for( const LayoutHandle & child : layout.children() ) {
+        const Layout & childLayout = getLayoutConst( child );
+        const SizeSpec childSizeSpec = childLayout.sizeSpec();
+        if( childSizeSpec.isGrow() ) {
+            assert( childLayout.size() == 0 );
             numGrowChildren += 1;
         }
-        availableSpace -= child._size;
+        availableSpace -= childLayout.size();
     }
 
     const double growSize =
         std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
-    for( auto & child : _children ) {
-        if( child.isGrow() ) {
-            child.sizeIs( growSize );
+    for( const LayoutHandle & child : layout.children() ) {
+        Layout & childLayout = getLayoutMut( child );
+        const SizeSpec childSizeSpec = childLayout.sizeSpec();
+        if( childSizeSpec.isGrow() ) {
+            childLayout.sizeIs( growSize );
         }
-        child.growSizePass();
+        growSizePass( child );
     }
+}
+
+void
+LayoutManager::computeLayout( const LayoutHandle & handle ) {
+    baseSizePass( handle );
+    growSizePass( handle );
 }
 
 VSpace::VSpace( double amount ): _amount( amount ) {}

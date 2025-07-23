@@ -33,28 +33,29 @@ private:
     std::variant< FitTag, GrowTag, Absolute > _variant;
 };
 
-class Layout1d {
-public:
-    void sizeSpecIs( SizeSpec val ) { _sizeSpec = val; }
-    constexpr bool isGrow() const { return _sizeSpec.isGrow(); }
-    constexpr bool isAbsolute() const { return _sizeSpec.isAbsolute(); }
+struct LayoutHandle {
+    int _index;
+    // int generation;
 
-    constexpr double size() { return _size; }
-    void sizeIs( double val ) { _size = val; }
+    LayoutHandle( int index ): _index( index ) {}
+    static LayoutHandle root() { return LayoutHandle( -1 ); }
+};
+
+class Layout {
+public:
+    constexpr const SizeSpec & sizeSpec() const { return _sizeSpec; }
+    constexpr double size() const { return _size; }
+    constexpr double padding() const { return _padding; }
+    constexpr double childGap() const { return _childGap; }
+    const std::vector< LayoutHandle > & children() const { return _children; }
+    LayoutHandle child( int idx ) const { return _children[ idx ]; }
 
     void paddingIs( double val ) { _padding = val; }
     void childGapIs( double val ) { _childGap = val; }
-
-    Layout1d child( int idx ) const { return _children[ idx ]; }
-    void parentIs( Layout1d * val ) { _parent = val; }
-    void addChild( const Layout1d & child ) { _children.push_back( child ); }
-
-    void baseSizePass();
-    void growSizePass();
-    void computeLayout() {
-        baseSizePass();
-        growSizePass();
-    }
+    void sizeIs( double val ) { _size = val; }
+    void sizeSpecIs( SizeSpec val ) { _sizeSpec = val; }
+    void parentIs( const LayoutHandle & val ) { _parent = val; }
+    void addChild( const LayoutHandle & child ) { _children.push_back( child ); }
 
 private:
     SizeSpec _sizeSpec = SizeSpec::absolute( 0 );
@@ -63,13 +64,50 @@ private:
 
     double _size = 0;
 
-    Layout1d * _parent;
-    std::vector< Layout1d > _children;
+    LayoutHandle _parent = LayoutHandle::root();
+    std::vector< LayoutHandle > _children;
 };
+
+class LayoutManager {
+public:
+    LayoutHandle createLayout() {
+        _layouts.push_back( Layout() );
+        return LayoutHandle( _layouts.size() - 1 );
+    }
+
+    const Layout & getLayoutConst( const LayoutHandle & handle ) const {
+        return _layouts.at( handle._index );
+    }
+    Layout & getLayoutMut( const LayoutHandle & handle ) {
+        return _layouts.at( handle._index );
+    }
+
+    void computeLayout( const LayoutHandle & handle );
+
+private:
+    void baseSizePass( const LayoutHandle & handle );
+    void growSizePass( const LayoutHandle & handle );
+
+    std::vector< Layout > _layouts;
+};
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Component {
 public:
     virtual ~Component() = default;
+
+    
 
     // Adjust sizes for child components that need to grow to the bounds of their
     // parent (this) container.
@@ -86,6 +124,8 @@ public:
 
     Component * parent;
     std::vector< std::unique_ptr< Component > > _children;
+
+    
 };
 
 // class Rectangle: public Component {
