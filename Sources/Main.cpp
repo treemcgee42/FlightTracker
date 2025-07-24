@@ -253,6 +253,8 @@ extern int testVStack();
 
 extern int testLayout1d();
 
+extern int testRectangleV2();
+
 int
 main() {
     // return mainMain();
@@ -261,4 +263,5 @@ main() {
     // return testVStack();
 
     // testLayout1d();
+    return testRectangleV2();
 }

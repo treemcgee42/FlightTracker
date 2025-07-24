@@ -46,6 +46,8 @@ public:
     const Layout & getLayoutConst() const;
     Layout & getLayoutMut();
 
+    void parentIs( LayoutHandle & parent );
+
 private:
     LayoutManager * _manager;
     int _index;
@@ -88,10 +90,7 @@ private:
 
 class LayoutManager {
 public:
-    LayoutHandle createLayout() {
-        _layouts.push_back( Layout() );
-        return LayoutHandle( this, _layouts.size() - 1 );
-    }
+    LayoutHandle createLayout();
 
     const Layout & getLayoutConst( const LayoutHandle * handle ) const {
         return _layouts.at( handle->index() );
@@ -113,28 +112,57 @@ private:
 
 
 
-// class ComponentV2 {
-// public:
-//     virtual ~ComponentV2() = default;
+class ComponentV2 {
+public:
+    ComponentV2( LayoutManager & layoutManager ):
+        _xLayout( layoutManager.createLayout() ),
+        _yLayout( layoutManager.createLayout() ) {}
+    virtual ~ComponentV2() = default;
 
-//     ComponentSize size( const LayoutManager & layoutManager ) const {
-//         return ComponentSize( layoutManager.getLayoutConst( 
-//     }
+    Layout & xLayoutMut() { return _xLayout.getLayoutMut(); }
+    Layout & yLayoutMut() { return _yLayout.getLayoutMut(); }
 
-//             virtual void draw( Vector2 at, double deltaTime, LayoutManager & layoutManager ) = 0;
+    const Layout & xLayoutConst() const { return _xLayout.getLayoutConst(); }
+    const Layout & yLayoutConst() const { return _yLayout.getLayoutConst(); }
+    ComponentSize size() const {
+        return ComponentSize( xLayoutConst().size(), yLayoutConst().size() );
+    }
 
-// private:
-//     LayoutHandle _xLayout;
-//     LayoutHandle _yLayout;
-// };
+    void parentIs( ComponentV2 * parent ) {
+        _parent = parent;
+        parent->_children.push_back( this );
 
-// class RectangleV2: public ComponentV2 {
-// public:
-//     RectangleV2( LayoutHandle xLayout, LayoutHandle yLayout ):
-//         _xLayout( xLayout ), _yLayout( yLayout );
+        _xLayout.parentIs( parent->_xLayout );
+        _yLayout.parentIs( parent->_yLayout );
+    }
 
-//     void draw( Vector2 at, double deltaTime, LayoutManager & layoutManager ) override;
-// };
+    void computeLayout() {
+        _xLayout.getLayoutMut().computeLayout();
+        _yLayout.getLayoutMut().computeLayout();
+    }
+
+    virtual void draw( Vector2 at, double deltaTime ) = 0;
+
+protected:
+    ComponentV2 * _parent;
+    std::vector< ComponentV2 * > _children;
+
+private:
+    LayoutHandle _xLayout;
+    LayoutHandle _yLayout;
+};
+
+class RectangleV2: public ComponentV2 {
+public:
+    RectangleV2( LayoutManager & layoutManager, rl::Color fillColor ):
+        ComponentV2( layoutManager ),
+        _fillColor( fillColor ) {}
+
+    void draw( Vector2 at, double deltaTime ) override;
+
+private:
+    rl::Color _fillColor;
+};
 
 
 

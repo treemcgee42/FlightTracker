@@ -18,6 +18,12 @@ LayoutHandle::getLayoutMut() {
 }
 
 void
+LayoutHandle::parentIs( LayoutHandle & parent ) {
+    getLayoutMut().parentIs( parent );
+    parent.getLayoutMut().addChild( *this );
+}
+
+void
 Layout::baseSizePass() {
     if( _sizeSpec.isAbsolute() ) {
         sizeIs( _sizeSpec.getAbsolute() );
@@ -68,14 +74,65 @@ Layout::computeLayout() {
     growSizePass();
 }
 
+LayoutHandle
+LayoutManager::createLayout()  {
+    fmt::print( "LayoutManager::{} allocating index {}\n", __FUNCTION__, _layouts.size() );
+    _layouts.push_back( Layout() );
+    return LayoutHandle( this, _layouts.size() - 1 );
+}
 
 
-// void
-// RectangleV2::draw( Vector2 at, double deltaTime ) {
-//     rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), rl::BLANK );
-// }
+void
+RectangleV2::draw( Vector2 at, double deltaTime ) {
+    rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), _fillColor );
 
+    double xOffset = xLayoutConst().padding();
+    double yOffset = yLayoutConst().padding();
+    for( ComponentV2 * child : _children ) {
+        child->draw( { at.x() + xOffset, at.y() + yOffset }, deltaTime );
+        xOffset += child->xLayoutConst().size() + xLayoutConst().childGap();
+        yOffset += child->yLayoutConst().size() + yLayoutConst().childGap();
+    }
+}
 
+int
+testRectangleV2() {
+    int windowWidth = 800;
+    int windowHeight = 600;
+    rl::SetConfigFlags( rl::FLAG_WINDOW_RESIZABLE );
+    rl::InitWindow( windowWidth, windowHeight, "RectangleV2" );
+
+    LayoutManager layoutManager;
+
+    RectangleV2 root{ layoutManager, rl::BLANK };
+    root.xLayoutMut().paddingIs( 40 );
+    root.yLayoutMut().paddingIs( 100 );
+
+    RectangleV2 child{ layoutManager, rl::BLUE };
+    child.parentIs( &root );
+    child.xLayoutMut().sizeSpecIs( SizeSpec::grow() );
+    child.yLayoutMut().sizeSpecIs( SizeSpec::grow() );
+
+    while( !rl::WindowShouldClose() ) {
+        windowWidth = rl::GetScreenWidth();
+        windowHeight = rl::GetScreenHeight();
+        const float deltaTime = rl::GetFrameTime();
+
+        root.xLayoutMut().sizeSpecIs( SizeSpec::absolute( windowWidth ) );
+        root.yLayoutMut().sizeSpecIs( SizeSpec::absolute( windowHeight ) );
+        root.computeLayout();
+
+        rl::BeginDrawing();
+        rl::ClearBackground( rl::RAYWHITE );
+
+        root.draw( { 0, 0 }, deltaTime );
+
+        rl::EndDrawing();
+    }
+
+    rl::CloseWindow();
+    return 0;
+}
 
 
 
