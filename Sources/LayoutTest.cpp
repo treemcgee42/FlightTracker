@@ -16,73 +16,68 @@ TEST_CASE("expanding") {
 
     LayoutManager layoutManager;
 
-    const LayoutHandle mainLayoutHandle = layoutManager.createLayout();
+    LayoutHandle mainLayoutHandle = layoutManager.createLayout();
     {
-        Layout & mainLayout = layoutManager.getLayoutMut( mainLayoutHandle );
+        Layout & mainLayout = mainLayoutHandle.getLayoutMut();
         mainLayout.sizeSpecIs( SizeSpec::absolute( rootSize ) );
         mainLayout.paddingIs( padding );
         mainLayout.childGapIs( childGap );
     }
 
-    const LayoutHandle child0Handle = layoutManager.createLayout();
+    LayoutHandle child0Handle = layoutManager.createLayout();
     {
-        Layout & child0 = layoutManager.getLayoutMut( child0Handle );
+        Layout & child0 = child0Handle.getLayoutMut();
         child0.parentIs( mainLayoutHandle );
         child0.sizeSpecIs( SizeSpec::grow() );
     }
-    layoutManager.getLayoutMut( mainLayoutHandle ).addChild( child0Handle );
+    mainLayoutHandle.getLayoutMut().addChild( child0Handle );
 
-    layoutManager.computeLayout( mainLayoutHandle );
+    mainLayoutHandle.getLayoutMut().computeLayout();
     REQUIRE( doctest::Approx( rootSize ) ==
-             layoutManager.getLayoutConst( mainLayoutHandle ).size() );
+             mainLayoutHandle.getLayoutConst().size() );
 
     SUBCASE( "single child" ) {
-        layoutManager.computeLayout( mainLayoutHandle );
-        const double childSize = layoutManager.getLayoutConst( child0Handle ).size();
+        mainLayoutHandle.getLayoutMut().computeLayout();
+        const double childSize = child0Handle.getLayoutConst().size();
         const double mainSize =
-            layoutManager.getLayoutConst( mainLayoutHandle ).size();
+            mainLayoutHandle.getLayoutConst().size();
         CHECK( doctest::Approx( childSize ) ==
                ( mainSize - 2 * padding ) );
     }
     SUBCASE( "absolute child" ) {
         const double child1Size = 10;
-        const LayoutHandle child1Handle = layoutManager.createLayout();
+        LayoutHandle child1Handle = layoutManager.createLayout();
         {
-            Layout & child1 = layoutManager.getLayoutMut( child1Handle );
+            Layout & child1 = child1Handle.getLayoutMut();
             child1.parentIs( mainLayoutHandle );
             child1.sizeSpecIs( SizeSpec::absolute( child1Size ) );
-            Layout & mainLayout = layoutManager.getLayoutMut( mainLayoutHandle );
-            mainLayout.addChild( child1Handle );
+            mainLayoutHandle.getLayoutMut().addChild( child1Handle );
         }
 
-        layoutManager.computeLayout( mainLayoutHandle );
-        const Layout & mainLayout = layoutManager.getLayoutConst( mainLayoutHandle );
-        const Layout & child0Layout = layoutManager.getLayoutConst( child0Handle );
-        const Layout & child1Layout = layoutManager.getLayoutConst( child1Handle );
-        CHECK( child0Layout.size() ==
+        mainLayoutHandle.getLayoutMut().computeLayout();
+        CHECK( child0Handle.getLayoutConst().size() ==
                doctest::Approx( rootSize - child1Size - 2 * padding - childGap ) );
-        CHECK( child1Layout.size() == doctest::Approx( child1Size ) );
+        CHECK( child1Handle.getLayoutConst().size() == doctest::Approx( child1Size ) );
     }
     SUBCASE( "multiple expanding children" ) {
         const int numChildren = 3;
         std::vector< LayoutHandle > childHandles = { child0Handle };
         for( int i=0; i<( numChildren - 1 ); ++i ) {
-            const LayoutHandle childHandle = layoutManager.createLayout();
+            LayoutHandle childHandle = layoutManager.createLayout();
             childHandles.push_back( childHandle );
-            Layout & child = layoutManager.getLayoutMut( childHandle );
+            Layout & child = childHandle.getLayoutMut();
             child.parentIs( mainLayoutHandle );
             child.sizeSpecIs( SizeSpec::grow() );
-            Layout & mainLayout = layoutManager.getLayoutMut( mainLayoutHandle );
-            mainLayout.addChild( childHandle );
+            mainLayoutHandle.getLayoutMut().addChild( childHandle );
         }
 
-        layoutManager.computeLayout( mainLayoutHandle );
+        mainLayoutHandle.getLayoutMut().computeLayout();
         const double expectedChildSize =
             ( rootSize - 2 * padding - ( numChildren - 1 ) * childGap ) /
             static_cast< double >( numChildren );
         for( const LayoutHandle & childHandle : childHandles ) {
-            const Layout & child = layoutManager.getLayoutConst( childHandle );
-            CHECK( child.size() == doctest::Approx( expectedChildSize ) );
+            CHECK( childHandle.getLayoutConst().size() ==
+                   doctest::Approx( expectedChildSize ) );
         }
     }
 }

@@ -33,12 +33,23 @@ private:
     std::variant< FitTag, GrowTag, Absolute > _variant;
 };
 
+class Layout;
+class LayoutManager;
+
 struct LayoutHandle {
+public:
+    LayoutHandle( LayoutManager * manager, int index ):
+        _manager( manager ), _index( index ) {}
+
+    int index() const { return _index; }
+
+    const Layout & getLayoutConst() const;
+    Layout & getLayoutMut();
+
+private:
+    LayoutManager * _manager;
     int _index;
     // int generation;
-
-    LayoutHandle( int index ): _index( index ) {}
-    static LayoutHandle root() { return LayoutHandle( -1 ); }
 };
 
 class Layout {
@@ -48,6 +59,7 @@ public:
     constexpr double padding() const { return _padding; }
     constexpr double childGap() const { return _childGap; }
     const std::vector< LayoutHandle > & children() const { return _children; }
+    std::vector< LayoutHandle > & childrenMut() { return _children; }
     LayoutHandle child( int idx ) const { return _children[ idx ]; }
 
     void paddingIs( double val ) { _padding = val; }
@@ -57,29 +69,35 @@ public:
     void parentIs( const LayoutHandle & val ) { _parent = val; }
     void addChild( const LayoutHandle & child ) { _children.push_back( child ); }
 
+    void computeLayout();
+
 private:
+    LayoutManager * _manager;
     SizeSpec _sizeSpec = SizeSpec::absolute( 0 );
     double _padding = 0;
     double _childGap = 0;
 
     double _size = 0;
 
-    LayoutHandle _parent = LayoutHandle::root();
+    std::optional< LayoutHandle > _parent;
     std::vector< LayoutHandle > _children;
+
+    void baseSizePass();
+    void growSizePass();
 };
 
 class LayoutManager {
 public:
     LayoutHandle createLayout() {
         _layouts.push_back( Layout() );
-        return LayoutHandle( _layouts.size() - 1 );
+        return LayoutHandle( this, _layouts.size() - 1 );
     }
 
-    const Layout & getLayoutConst( const LayoutHandle & handle ) const {
-        return _layouts.at( handle._index );
+    const Layout & getLayoutConst( const LayoutHandle * handle ) const {
+        return _layouts.at( handle->index() );
     }
-    Layout & getLayoutMut( const LayoutHandle & handle ) {
-        return _layouts.at( handle._index );
+    Layout & getLayoutMut( const LayoutHandle * handle ) {
+        return _layouts.at( handle->index() );
     }
 
     void computeLayout( const LayoutHandle & handle );
@@ -92,6 +110,31 @@ private:
 };
 
 
+
+
+
+// class ComponentV2 {
+// public:
+//     virtual ~ComponentV2() = default;
+
+//     ComponentSize size( const LayoutManager & layoutManager ) const {
+//         return ComponentSize( layoutManager.getLayoutConst( 
+//     }
+
+//             virtual void draw( Vector2 at, double deltaTime, LayoutManager & layoutManager ) = 0;
+
+// private:
+//     LayoutHandle _xLayout;
+//     LayoutHandle _yLayout;
+// };
+
+// class RectangleV2: public ComponentV2 {
+// public:
+//     RectangleV2( LayoutHandle xLayout, LayoutHandle yLayout ):
+//         _xLayout( xLayout ), _yLayout( yLayout );
+
+//     void draw( Vector2 at, double deltaTime, LayoutManager & layoutManager ) override;
+// };
 
 
 

@@ -7,42 +7,44 @@ namespace rl {
 
 #include "Layout.hpp"
 
-void
-LayoutManager::baseSizePass( const LayoutHandle & handle ) {
-    Layout & layout = getLayoutMut( handle );
-    const SizeSpec sizeSpec = layout.sizeSpec();
+const Layout &
+LayoutHandle::getLayoutConst() const {
+    return _manager->getLayoutConst( this );
+}
 
-    if( sizeSpec.isAbsolute() ) {
-        layout.sizeIs( sizeSpec.getAbsolute() );
-    } else if( sizeSpec.isGrow() ) {
-        layout.sizeIs( 0 );
+Layout &
+LayoutHandle::getLayoutMut() {
+    return _manager->getLayoutMut( this );
+}
+
+void
+Layout::baseSizePass() {
+    if( _sizeSpec.isAbsolute() ) {
+        sizeIs( _sizeSpec.getAbsolute() );
+    } else if( _sizeSpec.isGrow() ) {
+        sizeIs( 0 );
     } else {
         assert( false );
     }
 
-    for( const LayoutHandle & child : layout.children() ) {
-        baseSizePass( child );
+    for( LayoutHandle & child : childrenMut() ) {
+        child.getLayoutMut().baseSizePass();
     }
 }
 
 // growing must happen top-down
 void
-LayoutManager::growSizePass( const LayoutHandle & handle ) {
-    Layout & layout = getLayoutMut( handle );
-    const SizeSpec sizeSpec = layout.sizeSpec();
-
-    if( layout.children().size() == 0 ) {
+Layout::growSizePass() {
+    if( children().size() == 0 ) {
         return;
     }
 
     int numGrowChildren = 0;
     double availableSpace =
-        layout.size() - ( 2 * layout.padding() ) -
-        ( ( layout.children().size() - 1 ) * layout.childGap() );
-    for( const LayoutHandle & child : layout.children() ) {
-        const Layout & childLayout = getLayoutConst( child );
-        const SizeSpec childSizeSpec = childLayout.sizeSpec();
-        if( childSizeSpec.isGrow() ) {
+        size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
+    for( const LayoutHandle & child : children() ) {
+        const Layout & childLayout = child.getLayoutConst();
+        if( childLayout.sizeSpec().isGrow() ) {
             assert( childLayout.size() == 0 );
             numGrowChildren += 1;
         }
@@ -51,21 +53,39 @@ LayoutManager::growSizePass( const LayoutHandle & handle ) {
 
     const double growSize =
         std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
-    for( const LayoutHandle & child : layout.children() ) {
-        Layout & childLayout = getLayoutMut( child );
-        const SizeSpec childSizeSpec = childLayout.sizeSpec();
-        if( childSizeSpec.isGrow() ) {
+    for( LayoutHandle & child : childrenMut() ) {
+        Layout & childLayout = child.getLayoutMut();
+        if( childLayout.sizeSpec().isGrow() ) {
             childLayout.sizeIs( growSize );
         }
-        growSizePass( child );
+        childLayout.growSizePass();
     }
 }
 
 void
-LayoutManager::computeLayout( const LayoutHandle & handle ) {
-    baseSizePass( handle );
-    growSizePass( handle );
+Layout::computeLayout() {
+    baseSizePass();
+    growSizePass();
 }
+
+
+
+// void
+// RectangleV2::draw( Vector2 at, double deltaTime ) {
+//     rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), rl::BLANK );
+// }
+
+
+
+
+
+
+
+
+
+
+
+
 
 VSpace::VSpace( double amount ): _amount( amount ) {}
 
