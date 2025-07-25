@@ -29,12 +29,14 @@ inline std::string& trim(std::string& s, const char* t = ws)
 
 std::string
 format_as( const GeoCoord & geoCoord ) {
-  return fmt::format( "GeoCoord{{ {}, {} }}",
-                      geoCoord.longitude, geoCoord.latitude);
+    assert( geoCoord.longitude && geoCoord.latitude );
+    return fmt::format( "GeoCoord{{ {}, {} }}",
+                        geoCoord.longitude, geoCoord.latitude);
 }
 
 std::string
 format_as( const FlightData & flightData ) {
+    assert( flightData.callSign.size() );
     return fmt::format( "FlightData{{ {}, {} }}",
                         flightData.callSign, flightData.position );
 }
@@ -101,12 +103,23 @@ testRadar() {
     root.xLayoutMut()->paddingIs( 20 );
     root.yLayoutMut()->paddingIs( 20 );
 
+    VStackV2 vstack{ layoutManager };
+    vstack.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    vstack.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    vstack.yLayoutMut()->childGapIs( 5 );
+    root.addChild( &vstack );
+
+    RectangleV2 modeLine{ layoutManager, rl::BLUE };
+    modeLine.xLayoutMut()->sizeSpecIs( SizeSpec::growAcrossAxis() );
+    modeLine.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( 20 ) );
+    vstack.addChild( &modeLine );
+
     Radar radar{ layoutManager };
-    radar.parentIs( &root );
-    radar.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    radar.xLayoutMut()->sizeSpecIs( SizeSpec::growAcrossAxis() );
     radar.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
     radar.geoBbIs( { { -71.245840, 42.183094 },
                      { -70.777170, 42.529427 } } );
+    vstack.addChild( &radar );
 
     for( const auto & state : data[ "states" ] ) {
         const auto flightData = OpenSky::parseState( state );

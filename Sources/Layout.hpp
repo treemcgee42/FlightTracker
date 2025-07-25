@@ -1,5 +1,6 @@
 #pragma once
 
+#include <assert.h>
 #include <vector>
 
 #include "SizeTypes.hpp"
@@ -13,6 +14,9 @@ public:
         return SizeSpec( ShrinkAcrossAxis {} );
     }
     constexpr static SizeSpec grow() { return SizeSpec( GrowTag {} ); }
+    constexpr static SizeSpec growAcrossAxis() {
+        return SizeSpec( GrowAcrossAxis {} );
+    }
     constexpr static SizeSpec absolute( double val ) { return SizeSpec( val ); }
 
     bool isFit() const { return std::holds_alternative< FitTag >( _variant ); }
@@ -20,6 +24,9 @@ public:
         return std::holds_alternative< ShrinkAcrossAxis >( _variant );
     }
     bool isGrow() const { return std::holds_alternative< GrowTag >( _variant ); }
+    bool isGrowAcrossAxis() const {
+        return std::holds_alternative< GrowAcrossAxis >( _variant );
+    }
     bool isAbsolute() const {
         return std::holds_alternative< Absolute >( _variant );
     }
@@ -29,6 +36,7 @@ private:
     struct FitTag {};
     struct ShrinkAcrossAxis {};
     struct GrowTag {};
+    struct GrowAcrossAxis {};
     struct Absolute {
         double val;
     };
@@ -36,9 +44,10 @@ private:
     constexpr SizeSpec( FitTag fitTag ): _variant( fitTag ) {}
     constexpr SizeSpec( ShrinkAcrossAxis tag ): _variant( tag ) {}
     constexpr SizeSpec( GrowTag growTag ): _variant( growTag ) {}
+    constexpr SizeSpec( GrowAcrossAxis tag ): _variant( tag ) {}
     constexpr SizeSpec( double absolute ): _variant( Absolute { absolute } ) {}
 
-    std::variant< FitTag, ShrinkAcrossAxis, GrowTag, Absolute > _variant;
+    std::variant< FitTag, ShrinkAcrossAxis, GrowTag, GrowAcrossAxis, Absolute > _variant;
 };
 
 class Layout;
@@ -50,13 +59,12 @@ public:
         _manager( manager ), _index( index ) {}
 
     int index() const { return _index; }
+    bool valid() const { return _manager != nullptr; }
 
     const Layout * getLayoutConst() const;
     const Layout * operator->() const { return getLayoutConst(); }
     Layout * getLayoutMut();
     Layout * operator->() { return getLayoutMut(); }
-
-    void parentIs( LayoutHandle & parent );
 
 private:
     LayoutManager * _manager;
@@ -78,7 +86,10 @@ public:
     void childGapIs( double val ) { _childGap = val; }
     void sizeIs( double val ) { _size = val; }
     void sizeSpecIs( SizeSpec val ) { _sizeSpec = val; }
-    void parentIs( const LayoutHandle & val ) { _parent = val; }
+    void parentIs( const LayoutHandle & val ) {
+        assert( val.valid() );
+        _parent = val;
+    }
     void addChild( const LayoutHandle & child ) { _children.push_back( child ); }
 
     void computeLayout();
@@ -95,6 +106,8 @@ private:
     std::vector< LayoutHandle > _children;
 
     void baseSizePass();
+    void growAcrossAxis();
+    void growAlongAxis();
     void growSizePass();
     void fitSizePass();
 };
@@ -139,13 +152,15 @@ public:
         return ComponentSize( xLayoutConst()->size(), yLayoutConst()->size() );
     }
 
-    void parentIs( ComponentV2 * parent ) {
-        _parent = parent;
-        parent->_children.push_back( this );
+    void addChild( ComponentV2 * child ) {
+        _children.push_back( child );
+        child->_parent = this;
 
-        _xLayout.parentIs( parent->_xLayout );
-        _yLayout.parentIs( parent->_yLayout );
-    }
+        child->xLayoutMut()->parentIs( xLayoutMut() );
+        xLayoutMut()->addChild( child->xLayoutMut() );
+        child->yLayoutMut()->parentIs( yLayoutMut() );
+        yLayoutMut()->addChild( child->yLayoutMut() );
+    };
 
     void computeLayout() {
         _xLayout->computeLayout();
@@ -175,7 +190,13 @@ private:
     rl::Color _fillColor;
 };
 
+class VStackV2: public ComponentV2 {
+public:
+    VStackV2( LayoutManager & layoutManager ):
+        ComponentV2( layoutManager ) {}
 
+    void draw( Vector2 at, double deltaTime ) override;
+};
 
 
 

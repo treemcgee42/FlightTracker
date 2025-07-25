@@ -66,6 +66,18 @@ TEST_CASE("expanding") {
             CHECK( child->size() == doctest::Approx( expectedChildSize ) );
         }
     }
+    SUBCASE( "expand into expand" ) {
+        LayoutHandle childChild = layoutManager.createLayout();
+        childChild->sizeSpecIs( SizeSpec::grow() );
+        childChild->parentIs( child0 );
+        child0->addChild( childChild );
+
+        mainLayout->computeLayout();
+        CHECK( doctest::Approx( child0->size() ) ==
+               ( mainLayout->size() - 2 * mainLayout->padding() ) );
+        CHECK( doctest::Approx( childChild->size() ) ==
+               ( child0->size() - 2 * child0->padding() ) );
+    }
 }
 
 TEST_CASE( "fit along axis" ) {

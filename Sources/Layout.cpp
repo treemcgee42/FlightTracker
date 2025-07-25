@@ -9,18 +9,14 @@ namespace rl {
 
 const Layout *
 LayoutHandle::getLayoutConst() const {
+    assert( valid() );
     return _manager->getLayoutConst( this );
 }
 
 Layout *
 LayoutHandle::getLayoutMut() {
+    assert( valid() );
     return _manager->getLayoutMut( this );
-}
-
-void
-LayoutHandle::parentIs( LayoutHandle & parent ) {
-    getLayoutMut()->parentIs( parent );
-    parent->addChild( *this );
 }
 
 void
@@ -28,13 +24,9 @@ Layout::baseSizePass() {
     if( _sizeSpec.isAbsolute() ) {
         sizeIs( _sizeSpec.getAbsolute() );
     } else if( _sizeSpec.isGrow() ||
+               _sizeSpec.isGrowAcrossAxis() ||
                _sizeSpec.isFit() ||
                _sizeSpec.isShrinkAcrossAxis() ) {
-        // The parent of a Grow cannot be Fit.
-        assert( !( _sizeSpec.isGrow() &&
-                   _parent &&
-                   ( ( *_parent )->sizeSpec().isFit() ||
-                     ( *_parent )->sizeSpec().isShrinkAcrossAxis() ) ) );
         sizeIs( 0 );
     } else {
         assert( false );
@@ -47,30 +39,49 @@ Layout::baseSizePass() {
 
 // growing must happen top-down
 void
+Layout::growAcrossAxis() {
+    const double growSize = size() - 2 * padding();
+    for( LayoutHandle & child : childrenMut() ) {
+        if( child->sizeSpec().isGrowAcrossAxis() ) {
+            child->sizeIs( growSize );
+        }
+    }
+}
+
+void
+Layout::growAlongAxis() {
+   int numGrowChildren = 0;
+   double availableSpace =
+       size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
+   for( const LayoutHandle & child : children() ) {
+       if( child->sizeSpec().isGrow() ) {
+           assert( child->size() == 0 );
+           numGrowChildren += 1;
+       }
+       availableSpace -= child->size();
+   }
+
+   const double growSize =
+       std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
+   for( LayoutHandle & child : childrenMut() ) {
+       if( child->sizeSpec().isGrow() ) {
+           child->sizeIs( growSize );
+       }
+   }
+}
+
+void
 Layout::growSizePass() {
     if( children().size() == 0 ) {
         return;
     }
 
-    int numGrowChildren = 0;
-    double availableSpace =
-        size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
-    for( const LayoutHandle & child : children() ) {
-        if( child->sizeSpec().isGrow() ) {
-            assert( child->size() == 0 );
-            numGrowChildren += 1;
-        }
-        availableSpace -= child->size();
-    }
+    growAcrossAxis();
+    growAlongAxis();
 
-    const double growSize =
-        std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
-    for( LayoutHandle & child : childrenMut() ) {
-        if( child->sizeSpec().isGrow() ) {
-            child->sizeIs( growSize );
-        }
-        child->growSizePass();
-    }
+   for( LayoutHandle & child : childrenMut() ) {
+       child->growSizePass();
+   }
 }
 
 void
@@ -109,8 +120,8 @@ Layout::fitSizePass() {
 void
 Layout::computeLayout() {
     baseSizePass();
-    growSizePass();
     fitSizePass();
+    growSizePass();
 }
 
 LayoutHandle
@@ -134,6 +145,16 @@ RectangleV2::draw( Vector2 at, double deltaTime ) {
     }
 }
 
+void
+VStackV2::draw( Vector2 at, double deltaTime ) {
+    const double xOffset = xLayoutConst()->padding();
+    double yOffset = yLayoutConst()->padding();
+    for( ComponentV2 * child : _children ) {
+        child->draw( { at.x() + xOffset, at.y() + yOffset }, deltaTime );
+        yOffset += child->yLayoutConst()->size() + yLayoutConst()->childGap();
+    }
+}
+
 int
 testRectangleV2() {
     int windowWidth = 800;
@@ -148,9 +169,9 @@ testRectangleV2() {
     root.yLayoutMut()->paddingIs( 100 );
 
     RectangleV2 child{ layoutManager, rl::BLUE };
-    child.parentIs( &root );
     child.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
     child.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    root.addChild( &child );
 
     while( !rl::WindowShouldClose() ) {
         windowWidth = rl::GetScreenWidth();
