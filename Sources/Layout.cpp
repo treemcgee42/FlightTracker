@@ -27,7 +27,10 @@ void
 Layout::baseSizePass() {
     if( _sizeSpec.isAbsolute() ) {
         sizeIs( _sizeSpec.getAbsolute() );
-    } else if( _sizeSpec.isGrow() ) {
+    } else if( _sizeSpec.isGrow() || _sizeSpec.isFit() ) {
+        // The parent of a Grow cannot be Fit.
+        assert( !( _sizeSpec.isGrow() &&
+                   _parent && ( *_parent )->sizeSpec().isFit() ) );
         sizeIs( 0 );
     } else {
         assert( false );
@@ -67,9 +70,33 @@ Layout::growSizePass() {
 }
 
 void
+Layout::fitSizePass() {
+    // The size of fit layout depends on the sizes of its children. So this is bottom
+    // to top.
+    for( LayoutHandle & child : childrenMut() ) {
+        child->fitSizePass();
+    }
+
+    if( !_sizeSpec.isFit() ) {
+        return;
+    }
+    if( children().size() == 0 ) {
+        sizeIs( 0 );
+        return;
+    }
+
+    double size = 2 * padding() + ( children().size() - 1 ) * childGap();
+    for( const LayoutHandle & child : children() ) {
+        size += child->size();
+    }
+    sizeIs( size );
+}
+
+void
 Layout::computeLayout() {
     baseSizePass();
     growSizePass();
+    fitSizePass();
 }
 
 LayoutHandle

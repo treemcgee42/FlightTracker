@@ -67,3 +67,57 @@ TEST_CASE("expanding") {
         }
     }
 }
+
+TEST_CASE( "fit along axis" ) {
+    const double rootSize = 80;
+    double padding;
+    SUBCASE( "" ) { padding = 0; }
+    SUBCASE( "" ) { padding = 10; }
+    CAPTURE( padding );
+    double childGap;
+    SUBCASE( "" ) { childGap = 0; }
+    SUBCASE( "" ) { childGap = 1; }
+    CAPTURE( childGap );
+
+    LayoutManager layoutManager;
+
+    LayoutHandle parent = layoutManager.createLayout();
+    parent->sizeSpecIs( SizeSpec::fit() );
+    parent->paddingIs( padding );
+    parent->childGapIs( childGap );
+
+    SUBCASE( "two absolute children" ) {
+        double child0Size = 7;
+        LayoutHandle child0 = layoutManager.createLayout();
+        child0->sizeSpecIs( SizeSpec::absolute( child0Size ) );
+        child0->parentIs( parent );
+        parent->addChild( child0 );
+
+        double child1Size = 8;
+        LayoutHandle child1 = layoutManager.createLayout();
+        child1->sizeSpecIs( SizeSpec::absolute( child1Size ) );
+        child1->parentIs( parent );
+        parent->addChild( child1 );
+
+        parent->computeLayout();
+        CHECK( parent->size() == doctest::Approx( child0Size + child1Size +
+                                                  childGap + 2 * padding ) );
+    }
+
+    SUBCASE( "nested fit" ) {
+        LayoutHandle child0 = layoutManager.createLayout();
+        child0->sizeSpecIs( SizeSpec::fit() );
+        child0->parentIs( parent );
+        parent->addChild( child0 );
+
+        double child00Size = 5;
+        LayoutHandle child00 = layoutManager.createLayout();
+        child00->sizeSpecIs( SizeSpec::absolute( child00Size ) );
+        child00->parentIs( child0 );
+        child0->addChild( child00 );
+
+        parent->computeLayout();
+        CHECK( doctest::Approx( child0->size() ) == child00Size );
+        CHECK( doctest::Approx( parent->size() ) == child0->size() + 2 * padding );
+    }
+}

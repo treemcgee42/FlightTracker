@@ -88,6 +88,7 @@ private:
 
     void baseSizePass();
     void growSizePass();
+    void fitSizePass();
 };
 
 class LayoutManager {
