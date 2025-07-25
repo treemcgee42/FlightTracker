@@ -9,10 +9,16 @@ using ComponentSize = Vector2;
 class SizeSpec {
 public:
     constexpr static SizeSpec fit() { return SizeSpec( FitTag {} ); }
+    constexpr static SizeSpec shrinkAcrossAxis() {
+        return SizeSpec( ShrinkAcrossAxis {} );
+    }
     constexpr static SizeSpec grow() { return SizeSpec( GrowTag {} ); }
     constexpr static SizeSpec absolute( double val ) { return SizeSpec( val ); }
 
     bool isFit() const { return std::holds_alternative< FitTag >( _variant ); }
+    bool isShrinkAcrossAxis() const {
+        return std::holds_alternative< ShrinkAcrossAxis >( _variant );
+    }
     bool isGrow() const { return std::holds_alternative< GrowTag >( _variant ); }
     bool isAbsolute() const {
         return std::holds_alternative< Absolute >( _variant );
@@ -21,16 +27,18 @@ public:
 
 private:
     struct FitTag {};
+    struct ShrinkAcrossAxis {};
     struct GrowTag {};
     struct Absolute {
         double val;
     };
 
     constexpr SizeSpec( FitTag fitTag ): _variant( fitTag ) {}
+    constexpr SizeSpec( ShrinkAcrossAxis tag ): _variant( tag ) {}
     constexpr SizeSpec( GrowTag growTag ): _variant( growTag ) {}
     constexpr SizeSpec( double absolute ): _variant( Absolute { absolute } ) {}
 
-    std::variant< FitTag, GrowTag, Absolute > _variant;
+    std::variant< FitTag, ShrinkAcrossAxis, GrowTag, Absolute > _variant;
 };
 
 class Layout;

@@ -27,10 +27,14 @@ void
 Layout::baseSizePass() {
     if( _sizeSpec.isAbsolute() ) {
         sizeIs( _sizeSpec.getAbsolute() );
-    } else if( _sizeSpec.isGrow() || _sizeSpec.isFit() ) {
+    } else if( _sizeSpec.isGrow() ||
+               _sizeSpec.isFit() ||
+               _sizeSpec.isShrinkAcrossAxis() ) {
         // The parent of a Grow cannot be Fit.
         assert( !( _sizeSpec.isGrow() &&
-                   _parent && ( *_parent )->sizeSpec().isFit() ) );
+                   _parent &&
+                   ( ( *_parent )->sizeSpec().isFit() ||
+                     ( *_parent )->sizeSpec().isShrinkAcrossAxis() ) ) );
         sizeIs( 0 );
     } else {
         assert( false );
@@ -77,19 +81,29 @@ Layout::fitSizePass() {
         child->fitSizePass();
     }
 
-    if( !_sizeSpec.isFit() ) {
-        return;
-    }
-    if( children().size() == 0 ) {
-        sizeIs( 0 );
-        return;
-    }
+    if( _sizeSpec.isFit() ) {
+        if( children().size() == 0 ) {
+            sizeIs( 0 );
+            return;
+        }
 
-    double size = 2 * padding() + ( children().size() - 1 ) * childGap();
-    for( const LayoutHandle & child : children() ) {
-        size += child->size();
+        double size = 2 * padding() + ( children().size() - 1 ) * childGap();
+        for( const LayoutHandle & child : children() ) {
+            size += child->size();
+        }
+        sizeIs( size );
+    } else if( _sizeSpec.isShrinkAcrossAxis() ) {
+        if( children().size() == 0 ) {
+            sizeIs( 0 );
+            return;
+        }
+
+        double maxChildSize = 0;
+        for( const LayoutHandle & child : children() ) {
+            maxChildSize = std::max( maxChildSize, child->size() );
+        }
+        sizeIs( 2 * padding() + maxChildSize );
     }
-    sizeIs( size );
 }
 
 void
