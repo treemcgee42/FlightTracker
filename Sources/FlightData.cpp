@@ -68,13 +68,6 @@ OpenSky::parseState( const nlohmann::json & state ) {
     return flightData;
 }
 
-Radar::Radar() {}
-
-ComponentSize
-Radar::size() const {
-    return ComponentSize( 500, 500 );
-}
-
 void
 Radar::drawFlight( Vector2 radarAt, FlightData flightData ) {
     const Vector2 relPos = _geoBb.relativePosition( flightData.position );
@@ -94,12 +87,24 @@ Radar::draw( Vector2 at, double deltaTime ) {
 
 int
 testRadar() {
-    rl::InitWindow(800, 600, "Radar Demo");
+    int windowWidth = 800;
+    int windowHeight = 600;
+    rl::SetConfigFlags( rl::FLAG_WINDOW_RESIZABLE );
+    rl::InitWindow( windowWidth, windowHeight, "Radar Demo" );
 
     std::ifstream f( "../sample_data.json" );
     nlohmann::json data = nlohmann::json::parse( f );
 
-    Radar radar;
+    LayoutManager layoutManager;
+
+    RectangleV2 root{ layoutManager, rl::BLANK };
+    root.xLayoutMut()->paddingIs( 20 );
+    root.yLayoutMut()->paddingIs( 20 );
+
+    Radar radar{ layoutManager };
+    radar.parentIs( &root );
+    radar.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    radar.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
     radar.geoBbIs( { { -71.245840, 42.183094 },
                      { -70.777170, 42.529427 } } );
 
@@ -110,11 +115,18 @@ testRadar() {
     }
 
     while( !rl::WindowShouldClose() ) {
+        windowWidth = rl::GetScreenWidth();
+        windowHeight = rl::GetScreenHeight();
+        const float deltaTime = rl::GetFrameTime();
+
+        root.xLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowWidth ) );
+        root.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowHeight ) );
+        root.computeLayout();
+
         rl::BeginDrawing();
         rl::ClearBackground( rl::RAYWHITE );
 
-        const float deltaTime = rl::GetFrameTime();
-        radar.draw( { 20, 20 }, deltaTime );
+        root.draw( { 0, 0 }, deltaTime );
 
         rl::EndDrawing();
     }

@@ -31,16 +31,15 @@ public:
     static FlightData parseState( const nlohmann::json & state );
 };
 
-class Radar: public Component {
+class Radar: public ComponentV2 {
 public:
-    Radar();
+    Radar( LayoutManager & layoutManager ): ComponentV2( layoutManager ) {};
 
     void flightDataPush( const FlightData & flightData ) {
         _flightData.push_back( flightData );
     }
     void geoBbIs( const GeoBb & val ) { _geoBb = val; }
 
-    ComponentSize size() const override;
     void drawFlight( Vector2 radarAt, FlightData flightData );
     void draw( Vector2 at, double deltaTime ) override;
 

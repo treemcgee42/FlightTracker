@@ -258,10 +258,10 @@ extern int testRectangleV2();
 int
 main() {
     // return mainMain();
-    // return testRadar();
+    return testRadar();
     // return testScrollingText();
     // return testVStack();
 
     // testLayout1d();
-    return testRectangleV2();
+    // return testRectangleV2();
 }
