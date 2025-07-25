@@ -7,20 +7,20 @@ namespace rl {
 
 #include "Layout.hpp"
 
-const Layout &
+const Layout *
 LayoutHandle::getLayoutConst() const {
     return _manager->getLayoutConst( this );
 }
 
-Layout &
+Layout *
 LayoutHandle::getLayoutMut() {
     return _manager->getLayoutMut( this );
 }
 
 void
 LayoutHandle::parentIs( LayoutHandle & parent ) {
-    getLayoutMut().parentIs( parent );
-    parent.getLayoutMut().addChild( *this );
+    getLayoutMut()->parentIs( parent );
+    parent->addChild( *this );
 }
 
 void
@@ -34,7 +34,7 @@ Layout::baseSizePass() {
     }
 
     for( LayoutHandle & child : childrenMut() ) {
-        child.getLayoutMut().baseSizePass();
+        child->baseSizePass();
     }
 }
 
@@ -49,22 +49,20 @@ Layout::growSizePass() {
     double availableSpace =
         size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
     for( const LayoutHandle & child : children() ) {
-        const Layout & childLayout = child.getLayoutConst();
-        if( childLayout.sizeSpec().isGrow() ) {
-            assert( childLayout.size() == 0 );
+        if( child->sizeSpec().isGrow() ) {
+            assert( child->size() == 0 );
             numGrowChildren += 1;
         }
-        availableSpace -= childLayout.size();
+        availableSpace -= child->size();
     }
 
     const double growSize =
         std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
     for( LayoutHandle & child : childrenMut() ) {
-        Layout & childLayout = child.getLayoutMut();
-        if( childLayout.sizeSpec().isGrow() ) {
-            childLayout.sizeIs( growSize );
+        if( child->sizeSpec().isGrow() ) {
+            child->sizeIs( growSize );
         }
-        childLayout.growSizePass();
+        child->growSizePass();
     }
 }
 
@@ -86,12 +84,12 @@ void
 RectangleV2::draw( Vector2 at, double deltaTime ) {
     rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), _fillColor );
 
-    double xOffset = xLayoutConst().padding();
-    double yOffset = yLayoutConst().padding();
+    double xOffset = xLayoutConst()->padding();
+    double yOffset = yLayoutConst()->padding();
     for( ComponentV2 * child : _children ) {
         child->draw( { at.x() + xOffset, at.y() + yOffset }, deltaTime );
-        xOffset += child->xLayoutConst().size() + xLayoutConst().childGap();
-        yOffset += child->yLayoutConst().size() + yLayoutConst().childGap();
+        xOffset += child->xLayoutConst()->size() + xLayoutConst()->childGap();
+        yOffset += child->yLayoutConst()->size() + yLayoutConst()->childGap();
     }
 }
 
@@ -105,21 +103,21 @@ testRectangleV2() {
     LayoutManager layoutManager;
 
     RectangleV2 root{ layoutManager, rl::BLANK };
-    root.xLayoutMut().paddingIs( 40 );
-    root.yLayoutMut().paddingIs( 100 );
+    root.xLayoutMut()->paddingIs( 40 );
+    root.yLayoutMut()->paddingIs( 100 );
 
     RectangleV2 child{ layoutManager, rl::BLUE };
     child.parentIs( &root );
-    child.xLayoutMut().sizeSpecIs( SizeSpec::grow() );
-    child.yLayoutMut().sizeSpecIs( SizeSpec::grow() );
+    child.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    child.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
 
     while( !rl::WindowShouldClose() ) {
         windowWidth = rl::GetScreenWidth();
         windowHeight = rl::GetScreenHeight();
         const float deltaTime = rl::GetFrameTime();
 
-        root.xLayoutMut().sizeSpecIs( SizeSpec::absolute( windowWidth ) );
-        root.yLayoutMut().sizeSpecIs( SizeSpec::absolute( windowHeight ) );
+        root.xLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowWidth ) );
+        root.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowHeight ) );
         root.computeLayout();
 
         rl::BeginDrawing();

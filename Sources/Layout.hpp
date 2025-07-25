@@ -43,8 +43,10 @@ public:
 
     int index() const { return _index; }
 
-    const Layout & getLayoutConst() const;
-    Layout & getLayoutMut();
+    const Layout * getLayoutConst() const;
+    const Layout * operator->() const { return getLayoutConst(); }
+    Layout * getLayoutMut();
+    Layout * operator->() { return getLayoutMut(); }
 
     void parentIs( LayoutHandle & parent );
 
@@ -92,11 +94,11 @@ class LayoutManager {
 public:
     LayoutHandle createLayout();
 
-    const Layout & getLayoutConst( const LayoutHandle * handle ) const {
-        return _layouts.at( handle->index() );
+    const Layout * getLayoutConst( const LayoutHandle * handle ) const {
+        return &( _layouts.at( handle->index() ) );
     }
-    Layout & getLayoutMut( const LayoutHandle * handle ) {
-        return _layouts.at( handle->index() );
+    Layout * getLayoutMut( const LayoutHandle * handle ) {
+        return &( _layouts.at( handle->index() ) );
     }
 
     void computeLayout( const LayoutHandle & handle );
@@ -119,13 +121,13 @@ public:
         _yLayout( layoutManager.createLayout() ) {}
     virtual ~ComponentV2() = default;
 
-    Layout & xLayoutMut() { return _xLayout.getLayoutMut(); }
-    Layout & yLayoutMut() { return _yLayout.getLayoutMut(); }
+    LayoutHandle & xLayoutMut() { return _xLayout; }
+    LayoutHandle & yLayoutMut() { return _yLayout; }
 
-    const Layout & xLayoutConst() const { return _xLayout.getLayoutConst(); }
-    const Layout & yLayoutConst() const { return _yLayout.getLayoutConst(); }
+    const LayoutHandle & xLayoutConst() const { return _xLayout; }
+    const LayoutHandle & yLayoutConst() const { return _yLayout; }
     ComponentSize size() const {
-        return ComponentSize( xLayoutConst().size(), yLayoutConst().size() );
+        return ComponentSize( xLayoutConst()->size(), yLayoutConst()->size() );
     }
 
     void parentIs( ComponentV2 * parent ) {
@@ -137,8 +139,8 @@ public:
     }
 
     void computeLayout() {
-        _xLayout.getLayoutMut().computeLayout();
-        _yLayout.getLayoutMut().computeLayout();
+        _xLayout->computeLayout();
+        _yLayout->computeLayout();
     }
 
     virtual void draw( Vector2 at, double deltaTime ) = 0;
