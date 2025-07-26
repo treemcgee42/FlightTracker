@@ -40,7 +40,7 @@ public:
     }
     void geoBbIs( const GeoBb & val ) { _geoBb = val; }
 
-    void drawFlight( Vector2 radarAt, FlightData flightData );
+    void drawFlight( Vector2 radarAt, Vector2 mousePos, FlightData flightData );
     void draw( const DrawContext & ctx ) override;
 
 private:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 namespace rl {
 #include <raylib.h>
 }
@@ -47,5 +49,10 @@ struct Vector2 {
         _x += other.x();
         _y += other.y();
         return *this;
+    }
+
+    double distanceTo( const Vector2 & other ) const {
+        return sqrt( ( x() - other.x() ) * ( x() - other.x() ) +
+                     ( y() - other.y() ) * ( y() - other.y() ) );
     }
 };

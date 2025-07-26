@@ -71,19 +71,20 @@ OpenSky::parseState( const nlohmann::json & state ) {
 }
 
 void
-Radar::drawFlight( Vector2 radarAt, FlightData flightData ) {
+Radar::drawFlight( Vector2 radarAt, Vector2 mousePos, FlightData flightData ) {
     const Vector2 relPos = _geoBb.relativePosition( flightData.position );
     Vector2 at = radarAt;
     at.xInc( size().width() * relPos.x() );
     at.yInc( size().height() * relPos.y() );
-    rl::DrawCircleV( at.toRlVector2(), 3, rl::RED );
+    const double radius = mousePos.distanceTo( at ) > 5 ? 3 : 6;
+    rl::DrawCircleV( at.toRlVector2(), radius, rl::RED );
 }
 
 void
 Radar::draw( const DrawContext & ctx ) {
     rl::DrawRectangleLinesEx( ctx.at.toRlRectangle( size() ), 2, rl::RED );
     for( const FlightData & flightData : _flightData ) {
-        drawFlight( ctx.at, flightData );
+        drawFlight( ctx.at, ctx.mousePos, flightData );
     }
 }
 
@@ -131,6 +132,7 @@ testRadar() {
         windowWidth = rl::GetScreenWidth();
         windowHeight = rl::GetScreenHeight();
         const float deltaTime = rl::GetFrameTime();
+        const Vector2 mousePos = Vector2::fromRlVector2( rl::GetMousePosition() );
 
         root.xLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowWidth ) );
         root.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowHeight ) );
@@ -142,6 +144,7 @@ testRadar() {
         DrawContext drawCtx;
         drawCtx.at = { 0, 0 };
         drawCtx.deltaTime = deltaTime;
+        drawCtx.mousePos = mousePos;
         root.draw( drawCtx );
 
         rl::EndDrawing();
