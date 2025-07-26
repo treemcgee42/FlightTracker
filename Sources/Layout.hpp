@@ -134,7 +134,11 @@ private:
 
 
 
-
+struct DrawContext {
+    Vector2 at;
+    double deltaTime;
+    Vector2 mousePos;
+};
 
 class ComponentV2 {
 public:
@@ -167,7 +171,7 @@ public:
         _yLayout->computeLayout();
     }
 
-    virtual void draw( Vector2 at, double deltaTime ) = 0;
+    virtual void draw( const DrawContext & ctx ) = 0;
 
 protected:
     ComponentV2 * _parent;
@@ -184,7 +188,7 @@ public:
         ComponentV2( layoutManager ),
         _fillColor( fillColor ) {}
 
-    void draw( Vector2 at, double deltaTime ) override;
+    void draw( const DrawContext & ctx ) override;
 
 private:
     rl::Color _fillColor;
@@ -195,7 +199,7 @@ public:
     VStackV2( LayoutManager & layoutManager ):
         ComponentV2( layoutManager ) {}
 
-    void draw( Vector2 at, double deltaTime ) override;
+    void draw( const DrawContext & ctx ) override;
 };
 
 

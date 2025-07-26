@@ -80,10 +80,10 @@ Radar::drawFlight( Vector2 radarAt, FlightData flightData ) {
 }
 
 void
-Radar::draw( Vector2 at, double deltaTime ) {
-    rl::DrawRectangleLinesEx( at.toRlRectangle( size() ), 2, rl::RED );
+Radar::draw( const DrawContext & ctx ) {
+    rl::DrawRectangleLinesEx( ctx.at.toRlRectangle( size() ), 2, rl::RED );
     for( const FlightData & flightData : _flightData ) {
-        drawFlight( at, flightData );
+        drawFlight( ctx.at, flightData );
     }
 }
 
@@ -139,7 +139,10 @@ testRadar() {
         rl::BeginDrawing();
         rl::ClearBackground( rl::RAYWHITE );
 
-        root.draw( { 0, 0 }, deltaTime );
+        DrawContext drawCtx;
+        drawCtx.at = { 0, 0 };
+        drawCtx.deltaTime = deltaTime;
+        root.draw( drawCtx );
 
         rl::EndDrawing();
     }

@@ -41,7 +41,7 @@ public:
     void geoBbIs( const GeoBb & val ) { _geoBb = val; }
 
     void drawFlight( Vector2 radarAt, FlightData flightData );
-    void draw( Vector2 at, double deltaTime ) override;
+    void draw( const DrawContext & ctx ) override;
 
 private:
     std::vector< FlightData > _flightData;

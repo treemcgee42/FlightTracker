@@ -31,7 +31,7 @@ struct Vector2 {
         return Vector2( v.x, v.y );
     }
 
-    constexpr rl::Rectangle toRlRectangle( const Vector2 & widthAndHeight ) {
+    constexpr rl::Rectangle toRlRectangle( const Vector2 & widthAndHeight ) const {
         return {
             static_cast< float >( _x ),
             static_cast< float >( _y ),

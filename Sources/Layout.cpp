@@ -133,24 +133,28 @@ LayoutManager::createLayout()  {
 
 
 void
-RectangleV2::draw( Vector2 at, double deltaTime ) {
-    rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), _fillColor );
+RectangleV2::draw( const DrawContext & ctx ) {
+    rl::DrawRectangleV( ctx.at.toRlVector2(), size().toRlVector2(), _fillColor );
 
     double xOffset = xLayoutConst()->padding();
     double yOffset = yLayoutConst()->padding();
     for( ComponentV2 * child : _children ) {
-        child->draw( { at.x() + xOffset, at.y() + yOffset }, deltaTime );
+        auto childCtx = ctx;
+        childCtx.at = { ctx.at.x() + xOffset, ctx.at.y() + yOffset };
+        child->draw( childCtx );
         xOffset += child->xLayoutConst()->size() + xLayoutConst()->childGap();
         yOffset += child->yLayoutConst()->size() + yLayoutConst()->childGap();
     }
 }
 
 void
-VStackV2::draw( Vector2 at, double deltaTime ) {
+VStackV2::draw( const DrawContext & ctx ) {
     const double xOffset = xLayoutConst()->padding();
     double yOffset = yLayoutConst()->padding();
     for( ComponentV2 * child : _children ) {
-        child->draw( { at.x() + xOffset, at.y() + yOffset }, deltaTime );
+        auto childCtx = ctx;
+        childCtx.at = { ctx.at.x() + xOffset, ctx.at.y() + yOffset };
+        child->draw( childCtx );
         yOffset += child->yLayoutConst()->size() + yLayoutConst()->childGap();
     }
 }
@@ -185,7 +189,10 @@ testRectangleV2() {
         rl::BeginDrawing();
         rl::ClearBackground( rl::RAYWHITE );
 
-        root.draw( { 0, 0 }, deltaTime );
+        DrawContext drawCtx;
+        drawCtx.at = { 0, 0 };
+        drawCtx.deltaTime = deltaTime;
+        root.draw( drawCtx );
 
         rl::EndDrawing();
     }
