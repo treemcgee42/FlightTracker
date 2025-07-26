@@ -112,8 +112,22 @@ testRadar() {
 
     RectangleV2 modeLine{ layoutManager, rl::BLUE };
     modeLine.xLayoutMut()->sizeSpecIs( SizeSpec::growAcrossAxis() );
+    modeLine.xLayoutMut()->paddingIs( 5 );
     modeLine.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( 20 ) );
+    modeLine.yLayoutMut()->paddingIs( 5 );
     vstack.addChild( &modeLine );
+
+    ScrollingText modeLineText{
+        layoutManager,
+        "In all cases the compiler may initialise all these variables at compile time, but when marked constexpr or constinit you tell the compiler...",
+        rl::GetFontDefault(),
+        12,
+        1,
+        rl::BLACK,
+        30 };
+    modeLineText.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    modeLineText.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    modeLine.addChild( &modeLineText );
 
     Radar radar{ layoutManager };
     radar.xLayoutMut()->sizeSpecIs( SizeSpec::growAcrossAxis() );

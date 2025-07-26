@@ -147,6 +147,11 @@ public:
         _yLayout( layoutManager.createLayout() ) {}
     virtual ~ComponentV2() = default;
 
+    virtual void handleXLayoutChange() {}
+    void xLayoutSizeSpecIs( SizeSpec val ) {
+        _xLayout->sizeSpecIs( val );
+        handleXLayoutChange();
+    }
     LayoutHandle & xLayoutMut() { return _xLayout; }
     LayoutHandle & yLayoutMut() { return _yLayout; }
 
@@ -253,13 +258,16 @@ private:
     double _amount;
 };
 
-class Text: public Component {
+class Text: public ComponentV2 {
 public:
-    Text( const std::string & content );
-    Text( const std::string & content, double fontSize );
+    Text( LayoutManager & layoutManager,
+          const std::string & content,
+          const rl::Font & font,
+          double fontSize,
+          double textSpacing,
+          const rl::Color & textColor );
 
-    ComponentSize size() const override;
-    void draw( Vector2 at, double deltaTime ) override;
+    void draw( const DrawContext & ctx ) override;
 
 protected:
     std::string _content;
@@ -292,7 +300,15 @@ public:
         _scrollSpeed( scrollSpeed ),
         _offset( 0 ) {}
 
-    constexpr double offset() { return _offset; }
+    double contentSize() const { return _contentSize; }
+    double scrollRegionSize() const { return _scrollRegionSize; }
+    double offset() const { return _offset; }
+
+    void scrollRegionSizeIs( double val ) {
+        _scrollRegionSize = val;
+        _offset = 0;
+    }
+
     void update( double deltaTime );
 
 private:
@@ -306,11 +322,16 @@ private:
 
 class ScrollingText: public Text {
 public:
-    ScrollingText( const std::string & content, double width, double scrollSpeed );
+    ScrollingText( LayoutManager & layoutManager,
+                   const std::string & content,
+                   const rl::Font & font,
+                   double fontSize,
+                   double textSpacing,
+                   const rl::Color & textColor,
+                   double scrollSpeed );
     ~ScrollingText();
 
-    ComponentSize size() const override;
-    void draw( Vector2 at, double deltaTime ) override;
+    void draw( const DrawContext & ctx ) override;
 
 private:
     double _width;
