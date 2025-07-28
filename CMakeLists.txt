@@ -47,5 +47,7 @@ add_executable(ftl_test ${FTL_TESTS}
 target_link_libraries(ftl_test doctest::doctest
                                ftl)
 
+add_subdirectory(Sources/Dile)
+
 add_executable(flight_tracker Sources/Main.cpp)
-target_link_libraries(flight_tracker ftl)
+target_link_libraries(flight_tracker ftl Dile)
