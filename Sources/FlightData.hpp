@@ -4,6 +4,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "Dile/Dile.hpp"
+
 #include "Layout.hpp"
 #include "SizeTypes.hpp"
 
@@ -33,7 +35,7 @@ public:
 
 class Radar: public ComponentV2 {
 public:
-    Radar( LayoutManager & layoutManager ): ComponentV2( layoutManager ) {};
+    Radar( Dile::LayoutManager & layoutManager ): ComponentV2( layoutManager ) {};
 
     void flightDataPush( const FlightData & flightData ) {
         _flightData.push_back( flightData );

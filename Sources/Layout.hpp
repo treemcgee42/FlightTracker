@@ -3,136 +3,11 @@
 #include <assert.h>
 #include <vector>
 
+#include "Dile/Dile.hpp"
+
 #include "SizeTypes.hpp"
 
 using ComponentSize = Vector2;
-
-class SizeSpec {
-public:
-    constexpr static SizeSpec fit() { return SizeSpec( FitTag {} ); }
-    constexpr static SizeSpec shrinkAcrossAxis() {
-        return SizeSpec( ShrinkAcrossAxis {} );
-    }
-    constexpr static SizeSpec grow() { return SizeSpec( GrowTag {} ); }
-    constexpr static SizeSpec growAcrossAxis() {
-        return SizeSpec( GrowAcrossAxis {} );
-    }
-    constexpr static SizeSpec absolute( double val ) { return SizeSpec( val ); }
-
-    bool isFit() const { return std::holds_alternative< FitTag >( _variant ); }
-    bool isShrinkAcrossAxis() const {
-        return std::holds_alternative< ShrinkAcrossAxis >( _variant );
-    }
-    bool isGrow() const { return std::holds_alternative< GrowTag >( _variant ); }
-    bool isGrowAcrossAxis() const {
-        return std::holds_alternative< GrowAcrossAxis >( _variant );
-    }
-    bool isAbsolute() const {
-        return std::holds_alternative< Absolute >( _variant );
-    }
-    double getAbsolute() const { return std::get< Absolute >( _variant ).val; }
-
-private:
-    struct FitTag {};
-    struct ShrinkAcrossAxis {};
-    struct GrowTag {};
-    struct GrowAcrossAxis {};
-    struct Absolute {
-        double val;
-    };
-
-    constexpr SizeSpec( FitTag fitTag ): _variant( fitTag ) {}
-    constexpr SizeSpec( ShrinkAcrossAxis tag ): _variant( tag ) {}
-    constexpr SizeSpec( GrowTag growTag ): _variant( growTag ) {}
-    constexpr SizeSpec( GrowAcrossAxis tag ): _variant( tag ) {}
-    constexpr SizeSpec( double absolute ): _variant( Absolute { absolute } ) {}
-
-    std::variant< FitTag, ShrinkAcrossAxis, GrowTag, GrowAcrossAxis, Absolute > _variant;
-};
-
-class Layout;
-class LayoutManager;
-
-struct LayoutHandle {
-public:
-    LayoutHandle( LayoutManager * manager, int index ):
-        _manager( manager ), _index( index ) {}
-
-    int index() const { return _index; }
-    bool valid() const { return _manager != nullptr; }
-
-    const Layout * getLayoutConst() const;
-    const Layout * operator->() const { return getLayoutConst(); }
-    Layout * getLayoutMut();
-    Layout * operator->() { return getLayoutMut(); }
-
-private:
-    LayoutManager * _manager;
-    int _index;
-    // int generation;
-};
-
-class Layout {
-public:
-    constexpr const SizeSpec & sizeSpec() const { return _sizeSpec; }
-    constexpr double size() const { return _size; }
-    constexpr double padding() const { return _padding; }
-    constexpr double childGap() const { return _childGap; }
-    const std::vector< LayoutHandle > & children() const { return _children; }
-    std::vector< LayoutHandle > & childrenMut() { return _children; }
-    LayoutHandle child( int idx ) const { return _children[ idx ]; }
-
-    void paddingIs( double val ) { _padding = val; }
-    void childGapIs( double val ) { _childGap = val; }
-    void sizeIs( double val ) { _size = val; }
-    void sizeSpecIs( SizeSpec val ) { _sizeSpec = val; }
-    void parentIs( const LayoutHandle & val ) {
-        assert( val.valid() );
-        _parent = val;
-    }
-    void addChild( const LayoutHandle & child ) { _children.push_back( child ); }
-
-    void computeLayout();
-
-private:
-    LayoutManager * _manager;
-    SizeSpec _sizeSpec = SizeSpec::absolute( 0 );
-    double _padding = 0;
-    double _childGap = 0;
-
-    double _size = 0;
-
-    std::optional< LayoutHandle > _parent;
-    std::vector< LayoutHandle > _children;
-
-    void baseSizePass();
-    void growAcrossAxis();
-    void growAlongAxis();
-    void growSizePass();
-    void fitSizePass();
-};
-
-class LayoutManager {
-public:
-    LayoutHandle createLayout();
-
-    const Layout * getLayoutConst( const LayoutHandle * handle ) const {
-        return &( _layouts.at( handle->index() ) );
-    }
-    Layout * getLayoutMut( const LayoutHandle * handle ) {
-        return &( _layouts.at( handle->index() ) );
-    }
-
-    void computeLayout( const LayoutHandle & handle );
-
-private:
-    void baseSizePass( const LayoutHandle & handle );
-    void growSizePass( const LayoutHandle & handle );
-
-    std::vector< Layout > _layouts;
-};
-
-
 
 struct DrawContext {
     Vector2 at;
@@ -142,21 +17,21 @@ struct DrawContext {
 
 class ComponentV2 {
 public:
-    ComponentV2( LayoutManager & layoutManager ):
+    ComponentV2( Dile::LayoutManager & layoutManager ):
         _xLayout( layoutManager.createLayout() ),
         _yLayout( layoutManager.createLayout() ) {}
     virtual ~ComponentV2() = default;
 
     virtual void handleXLayoutChange() {}
-    void xLayoutSizeSpecIs( SizeSpec val ) {
+    void xLayoutSizeSpecIs( Dile::SizeSpec val ) {
         _xLayout->sizeSpecIs( val );
         handleXLayoutChange();
     }
-    LayoutHandle & xLayoutMut() { return _xLayout; }
-    LayoutHandle & yLayoutMut() { return _yLayout; }
+    Dile::LayoutHandle & xLayoutMut() { return _xLayout; }
+    Dile::LayoutHandle & yLayoutMut() { return _yLayout; }
 
-    const LayoutHandle & xLayoutConst() const { return _xLayout; }
-    const LayoutHandle & yLayoutConst() const { return _yLayout; }
+    const Dile::LayoutHandle & xLayoutConst() const { return _xLayout; }
+    const Dile::LayoutHandle & yLayoutConst() const { return _yLayout; }
     ComponentSize size() const {
         return ComponentSize( xLayoutConst()->size(), yLayoutConst()->size() );
     }
@@ -183,13 +58,13 @@ protected:
     std::vector< ComponentV2 * > _children;
 
 private:
-    LayoutHandle _xLayout;
-    LayoutHandle _yLayout;
+    Dile::LayoutHandle _xLayout;
+    Dile::LayoutHandle _yLayout;
 };
 
 class RectangleV2: public ComponentV2 {
 public:
-    RectangleV2( LayoutManager & layoutManager, rl::Color fillColor ):
+    RectangleV2( Dile::LayoutManager & layoutManager, rl::Color fillColor ):
         ComponentV2( layoutManager ),
         _fillColor( fillColor ) {}
 
@@ -201,7 +76,7 @@ private:
 
 class VStackV2: public ComponentV2 {
 public:
-    VStackV2( LayoutManager & layoutManager ):
+    VStackV2( Dile::LayoutManager & layoutManager ):
         ComponentV2( layoutManager ) {}
 
     void draw( const DrawContext & ctx ) override;
@@ -260,7 +135,7 @@ private:
 
 class Text: public ComponentV2 {
 public:
-    Text( LayoutManager & layoutManager,
+    Text( Dile::LayoutManager & layoutManager,
           const std::string & content,
           const rl::Font & font,
           double fontSize,
@@ -322,7 +197,7 @@ private:
 
 class ScrollingText: public Text {
 public:
-    ScrollingText( LayoutManager & layoutManager,
+    ScrollingText( Dile::LayoutManager & layoutManager,
                    const std::string & content,
                    const rl::Font & font,
                    double fontSize,

@@ -7,131 +7,6 @@ namespace rl {
 
 #include "Layout.hpp"
 
-const Layout *
-LayoutHandle::getLayoutConst() const {
-    assert( valid() );
-    return _manager->getLayoutConst( this );
-}
-
-Layout *
-LayoutHandle::getLayoutMut() {
-    assert( valid() );
-    return _manager->getLayoutMut( this );
-}
-
-void
-Layout::baseSizePass() {
-    if( _sizeSpec.isAbsolute() ) {
-        sizeIs( _sizeSpec.getAbsolute() );
-    } else if( _sizeSpec.isGrow() ||
-               _sizeSpec.isGrowAcrossAxis() ||
-               _sizeSpec.isFit() ||
-               _sizeSpec.isShrinkAcrossAxis() ) {
-        sizeIs( 0 );
-    } else {
-        assert( false );
-    }
-
-    for( LayoutHandle & child : childrenMut() ) {
-        child->baseSizePass();
-    }
-}
-
-// growing must happen top-down
-void
-Layout::growAcrossAxis() {
-    const double growSize = size() - 2 * padding();
-    for( LayoutHandle & child : childrenMut() ) {
-        if( child->sizeSpec().isGrowAcrossAxis() ) {
-            child->sizeIs( growSize );
-        }
-    }
-}
-
-void
-Layout::growAlongAxis() {
-   int numGrowChildren = 0;
-   double availableSpace =
-       size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
-   for( const LayoutHandle & child : children() ) {
-       if( child->sizeSpec().isGrow() ) {
-           assert( child->size() == 0 );
-           numGrowChildren += 1;
-       }
-       availableSpace -= child->size();
-   }
-
-   const double growSize =
-       std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
-   for( LayoutHandle & child : childrenMut() ) {
-       if( child->sizeSpec().isGrow() ) {
-           child->sizeIs( growSize );
-       }
-   }
-}
-
-void
-Layout::growSizePass() {
-    if( children().size() == 0 ) {
-        return;
-    }
-
-    growAcrossAxis();
-    growAlongAxis();
-
-   for( LayoutHandle & child : childrenMut() ) {
-       child->growSizePass();
-   }
-}
-
-void
-Layout::fitSizePass() {
-    // The size of fit layout depends on the sizes of its children. So this is bottom
-    // to top.
-    for( LayoutHandle & child : childrenMut() ) {
-        child->fitSizePass();
-    }
-
-    if( _sizeSpec.isFit() ) {
-        if( children().size() == 0 ) {
-            sizeIs( 0 );
-            return;
-        }
-
-        double size = 2 * padding() + ( children().size() - 1 ) * childGap();
-        for( const LayoutHandle & child : children() ) {
-            size += child->size();
-        }
-        sizeIs( size );
-    } else if( _sizeSpec.isShrinkAcrossAxis() ) {
-        if( children().size() == 0 ) {
-            sizeIs( 0 );
-            return;
-        }
-
-        double maxChildSize = 0;
-        for( const LayoutHandle & child : children() ) {
-            maxChildSize = std::max( maxChildSize, child->size() );
-        }
-        sizeIs( 2 * padding() + maxChildSize );
-    }
-}
-
-void
-Layout::computeLayout() {
-    baseSizePass();
-    fitSizePass();
-    growSizePass();
-}
-
-LayoutHandle
-LayoutManager::createLayout()  {
-    fmt::print( "LayoutManager::{} allocating index {}\n", __FUNCTION__, _layouts.size() );
-    _layouts.push_back( Layout() );
-    return LayoutHandle( this, _layouts.size() - 1 );
-}
-
-
 void
 RectangleV2::draw( const DrawContext & ctx ) {
     rl::DrawRectangleV( ctx.at.toRlVector2(), size().toRlVector2(), _fillColor );
@@ -166,15 +41,15 @@ testRectangleV2() {
     rl::SetConfigFlags( rl::FLAG_WINDOW_RESIZABLE );
     rl::InitWindow( windowWidth, windowHeight, "RectangleV2" );
 
-    LayoutManager layoutManager;
+    Dile::LayoutManager layoutManager;
 
     RectangleV2 root{ layoutManager, rl::BLANK };
     root.xLayoutMut()->paddingIs( 40 );
     root.yLayoutMut()->paddingIs( 100 );
 
     RectangleV2 child{ layoutManager, rl::BLUE };
-    child.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
-    child.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    child.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
+    child.yLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
     root.addChild( &child );
 
     while( !rl::WindowShouldClose() ) {
@@ -182,8 +57,8 @@ testRectangleV2() {
         windowHeight = rl::GetScreenHeight();
         const float deltaTime = rl::GetFrameTime();
 
-        root.xLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowWidth ) );
-        root.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowHeight ) );
+        root.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::absolute( windowWidth ) );
+        root.yLayoutMut()->sizeSpecIs( Dile::SizeSpec::absolute( windowHeight ) );
         root.computeLayout();
 
         rl::BeginDrawing();
@@ -223,7 +98,7 @@ VSpace::draw( Vector2 at, double deltaTime ) {
     rl::DrawRectangleV( at.toRlVector2(), size().toRlVector2(), rl::BLANK );
 }
 
-Text::Text( LayoutManager & layoutManager,
+Text::Text( Dile::LayoutManager & layoutManager,
             const std::string & content,
             const rl::Font & font,
             double fontSize,
@@ -254,7 +129,7 @@ CircularScrollOffset::update( double deltaTime ) {
     }
 }
 
-ScrollingText::ScrollingText( LayoutManager & layoutManager,
+ScrollingText::ScrollingText( Dile::LayoutManager & layoutManager,
                               const std::string & content,
                               const rl::Font & font,
                               double fontSize,

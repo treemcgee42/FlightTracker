@@ -98,22 +98,22 @@ testRadar() {
     std::ifstream f( "../sample_data.json" );
     nlohmann::json data = nlohmann::json::parse( f );
 
-    LayoutManager layoutManager;
+    Dile::LayoutManager layoutManager;
 
     RectangleV2 root{ layoutManager, rl::BLANK };
     root.xLayoutMut()->paddingIs( 20 );
     root.yLayoutMut()->paddingIs( 20 );
 
     VStackV2 vstack{ layoutManager };
-    vstack.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
-    vstack.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    vstack.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
+    vstack.yLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
     vstack.yLayoutMut()->childGapIs( 5 );
     root.addChild( &vstack );
 
     RectangleV2 modeLine{ layoutManager, rl::BLUE };
-    modeLine.xLayoutMut()->sizeSpecIs( SizeSpec::growAcrossAxis() );
+    modeLine.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::growAcrossAxis() );
     modeLine.xLayoutMut()->paddingIs( 5 );
-    modeLine.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( 20 ) );
+    modeLine.yLayoutMut()->sizeSpecIs( Dile::SizeSpec::absolute( 20 ) );
     modeLine.yLayoutMut()->paddingIs( 5 );
     vstack.addChild( &modeLine );
 
@@ -125,13 +125,13 @@ testRadar() {
         1,
         rl::BLACK,
         30 };
-    modeLineText.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
-    modeLineText.xLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    modeLineText.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
+    modeLineText.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
     modeLine.addChild( &modeLineText );
 
     Radar radar{ layoutManager };
-    radar.xLayoutMut()->sizeSpecIs( SizeSpec::growAcrossAxis() );
-    radar.yLayoutMut()->sizeSpecIs( SizeSpec::grow() );
+    radar.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::growAcrossAxis() );
+    radar.yLayoutMut()->sizeSpecIs( Dile::SizeSpec::grow() );
     radar.geoBbIs( { { -71.245840, 42.183094 },
                      { -70.777170, 42.529427 } } );
     vstack.addChild( &radar );
@@ -148,8 +148,8 @@ testRadar() {
         const float deltaTime = rl::GetFrameTime();
         const Vector2 mousePos = Vector2::fromRlVector2( rl::GetMousePosition() );
 
-        root.xLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowWidth ) );
-        root.yLayoutMut()->sizeSpecIs( SizeSpec::absolute( windowHeight ) );
+        root.xLayoutMut()->sizeSpecIs( Dile::SizeSpec::absolute( windowWidth ) );
+        root.yLayoutMut()->sizeSpecIs( Dile::SizeSpec::absolute( windowHeight ) );
         root.computeLayout();
 
         rl::BeginDrawing();
