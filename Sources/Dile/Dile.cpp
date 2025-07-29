@@ -18,8 +18,9 @@ LayoutHandle::getLayoutMut() {
 
 void
 Layout::baseSizePass() {
-    if( _sizeSpec.isAbsolute() ) {
-        sizeIs( _sizeSpec.getAbsolute() );
+    if( const auto absoluteSize = _sizeSpec.isAbsolute();
+        absoluteSize ) {
+        sizeIs( *absoluteSize );
     } else if( _sizeSpec.isGrow() ||
                _sizeSpec.isGrowAcrossAxis() ||
                _sizeSpec.isFit() ||
@@ -122,7 +123,7 @@ Layout::computeLayout() {
 }
 
 LayoutHandle
-LayoutManager::createLayout()  {
+LayoutManager::createLayout() noexcept  {
     // fmt::print( "LayoutManager::{} allocating index {}\n", __FUNCTION__, _layouts.size() );
     _layouts.push_back( Layout() );
     return LayoutHandle( this, _layouts.size() - 1 );
