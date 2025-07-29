@@ -1,6 +1,10 @@
 // Copyright (C) 2025 by Runi Malladi
 
+#include <spdlog/spdlog.h>
+
 #include "Dile.hpp"
+
+static std::shared_ptr< spdlog::logger > logger = spdlog::default_logger();
 
 namespace Dile {
 
@@ -18,6 +22,7 @@ LayoutHandle::getLayoutMut() {
 
 void
 Layout::baseSizePass() {
+    logger->trace( "" );
     if( const auto absoluteSize = _sizeSpec.isAbsolute();
         absoluteSize ) {
         sizeIs( *absoluteSize );
@@ -38,6 +43,7 @@ Layout::baseSizePass() {
 // growing must happen top-down
 void
 Layout::growAcrossAxis() {
+    logger->trace( "" );
     const double growSize = size() - 2 * padding();
     for( LayoutHandle & child : childrenMut() ) {
         if( child->sizeSpec().isGrowAcrossAxis() ) {
@@ -48,28 +54,30 @@ Layout::growAcrossAxis() {
 
 void
 Layout::growAlongAxis() {
-   int numGrowChildren = 0;
-   double availableSpace =
-       size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
-   for( const LayoutHandle & child : children() ) {
-       if( child->sizeSpec().isGrow() ) {
-           assert( child->size() == 0 );
-           numGrowChildren += 1;
-       }
-       availableSpace -= child->size();
-   }
+    logger->trace( "" );
+    int numGrowChildren = 0;
+    double availableSpace =
+        size() - ( 2 * padding() ) - ( ( children().size() - 1 ) * childGap() );
+    for( const LayoutHandle & child : children() ) {
+        if( child->sizeSpec().isGrow() ) {
+            assert( child->size() == 0 );
+            numGrowChildren += 1;
+        }
+        availableSpace -= child->size();
+    }
 
-   const double growSize =
-       std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
-   for( LayoutHandle & child : childrenMut() ) {
-       if( child->sizeSpec().isGrow() ) {
-           child->sizeIs( growSize );
-       }
-   }
+    const double growSize =
+        std::max( availableSpace / static_cast< double >( numGrowChildren ), 0.0 );
+    for( LayoutHandle & child : childrenMut() ) {
+        if( child->sizeSpec().isGrow() ) {
+            child->sizeIs( growSize );
+        }
+    }
 }
 
 void
 Layout::growSizePass() {
+    logger->trace( "" );
     if( children().size() == 0 ) {
         return;
     }
@@ -84,6 +92,7 @@ Layout::growSizePass() {
 
 void
 Layout::fitSizePass() {
+    logger->trace( "" );
     // The size of fit layout depends on the sizes of its children. So this is bottom
     // to top.
     for( LayoutHandle & child : childrenMut() ) {
@@ -117,6 +126,7 @@ Layout::fitSizePass() {
 
 void
 Layout::computeLayout() {
+    logger->debug( "" );
     baseSizePass();
     fitSizePass();
     growSizePass();
@@ -124,7 +134,7 @@ Layout::computeLayout() {
 
 LayoutHandle
 LayoutManager::createLayout() noexcept  {
-    // fmt::print( "LayoutManager::{} allocating index {}\n", __FUNCTION__, _layouts.size() );
+    logger->info( "allocating index {}", _layouts.size() );
     _layouts.push_back( Layout() );
     return LayoutHandle( this, _layouts.size() - 1 );
 }
