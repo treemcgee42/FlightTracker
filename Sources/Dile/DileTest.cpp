@@ -1,7 +1,9 @@
-
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#include "Layout.hpp"
+#include "Dile.hpp"
+
+namespace Dile {
 
 TEST_CASE("expanding") {
     const double rootSize = 80;
@@ -186,3 +188,5 @@ TEST_CASE( "shrink across axis" ) {
         CHECK( doctest::Approx( parent->size() ) == child0->size() + 2 * padding );
     }
 }
+
+} // namespace Dile

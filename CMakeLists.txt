@@ -40,12 +40,12 @@ target_link_libraries(ftl fmt
                           nlohmann_json::nlohmann_json
                           raylib)
 
-find_package(doctest REQUIRED)
-set(FTL_TESTS Sources/LayoutTest.cpp)
-add_executable(ftl_test ${FTL_TESTS}
-                        Sources/Test.cpp)
-target_link_libraries(ftl_test doctest::doctest
-                               ftl)
+# find_package(doctest REQUIRED)
+# set(FTL_TESTS Sources/LayoutTest.cpp)
+# add_executable(ftl_test ${FTL_TESTS}
+#                         Sources/Test.cpp)
+# target_link_libraries(ftl_test doctest::doctest
+#                                ftl)
 
 add_subdirectory(Sources/Dile)
 
